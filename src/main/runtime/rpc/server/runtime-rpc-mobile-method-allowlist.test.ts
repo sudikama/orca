@@ -614,13 +614,8 @@ describe('OrcaRuntimeRpcServer', () => {
     expect(replies).toContainEqual(
       expect.objectContaining({ id: 'req_browser_dialog_dismiss', ok: true })
     )
-    expect(replies).toContainEqual(
-      expect.objectContaining({
-        id: 'req_remove_claude',
-        ok: false,
-        error: expect.objectContaining({ code: 'forbidden' })
-      })
-    )
+    expect(replies).toContainEqual(expect.objectContaining({ id: 'req_remove_claude', ok: true }))
+    expect(mocks.removeClaudeAccount).toHaveBeenCalledWith('claude-account')
     expect(mocks.selectClaudeAccount).toHaveBeenCalledWith('claude-account', {})
     expect(mocks.selectCodexAccount).toHaveBeenCalledWith(null)
     expect(mocks.consumeCodexRateLimitResetCredit).toHaveBeenCalledWith(
@@ -799,6 +794,5 @@ describe('OrcaRuntimeRpcServer', () => {
     expect(mocks.linearTeamLabels).toHaveBeenCalledWith('team-1', 'workspace-1')
     expect(mocks.linearTeamMembers).toHaveBeenCalledWith('team-1', 'workspace-1')
     expect(mocks.linearAddIssueComment).toHaveBeenCalledWith('issue-1', 'done', 'workspace-1')
-    expect(mocks.removeClaudeAccount).not.toHaveBeenCalled()
   })
 })
