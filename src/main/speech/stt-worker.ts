@@ -3,6 +3,7 @@ import { parentPort, workerData } from 'node:worker_threads'
 import { resampleToRate } from './stt-audio-resample'
 import { OfflineAudioChunker } from './stt-offline-audio-chunker'
 import { buildHotwordsConfig, resolveFile, resolveTokens } from './stt-worker-model-config'
+import { createStopTailPadding } from './stt-stop-tail-padding'
 
 type WorkerMessage =
   | {
@@ -263,6 +264,10 @@ function handleStop(): void {
 
   try {
     if (isStreaming) {
+      sherpa.acceptWaveformOnline(stream, {
+        sampleRate: offlineSampleRate,
+        samples: createStopTailPadding(offlineSampleRate)
+      })
       sherpa.inputFinished(stream)
       while (sherpa.isOnlineStreamReady(recognizer, stream)) {
         sherpa.decodeOnlineStream(recognizer, stream)
