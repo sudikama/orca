@@ -14,6 +14,8 @@ type WorkerMessage =
       files: string[]
       hotwordsFilePath?: string
       modelingUnit?: string
+      // Absent = auto-detect; only Whisper and SenseVoice read it.
+      language?: string
     }
   | { type: 'feed'; samples: Float32Array; sampleRate: number }
   | { type: 'stop' }
@@ -97,7 +99,8 @@ function handleInit(msg: Extract<WorkerMessage, { type: 'init' }>): void {
         modelConfig: {
           whisper: {
             encoder: resolveFile(files, 'encoder', modelDir),
-            decoder: resolveFile(files, 'decoder', modelDir)
+            decoder: resolveFile(files, 'decoder', modelDir),
+            language: msg.language ?? ''
           },
           tokens,
           numThreads: 2,
@@ -130,8 +133,7 @@ function handleInit(msg: Extract<WorkerMessage, { type: 'init' }>): void {
         modelConfig: {
           senseVoice: {
             model: resolveFile(files, 'model', modelDir),
-            // Empty string = auto-detect language (supports zh/en/ja/ko/yue).
-            language: '',
+            language: msg.language ?? '',
             useInverseTextNormalization: 1
           },
           tokens,
