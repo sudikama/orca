@@ -3,6 +3,10 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeIn } from 'react-native-reanimated'
 import { getProviderDisplayName } from '../../../../src/shared/usage-provider-windows'
+import {
+  useRemoveManagedAccount,
+  type RemovableAccount
+} from '../../accounts/add-account/use-remove-managed-account'
 import type { AccountsSnapshot, ProviderKey } from '../../components/AccountUsage'
 import { useNow } from '../../hooks/use-now'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
@@ -23,6 +27,7 @@ import { selectHomeOtherUsageSections, selectHomeUsageSections } from './home-us
 import { UsageCard } from './MobileHomeUsageCard'
 import { MobileHomeHostPill, useHomeTabHost } from './MobileHomeHostPill'
 import { MobileHomeTabHeader, MobileHomeTabHeaderButton } from './MobileHomeTabHeader'
+import { UsageAddAccountButton } from './UsageAddAccountButton'
 
 const PROVIDER_TITLES: Record<ProviderKey, string> = { claude: 'Claude Code', codex: 'Codex' }
 
@@ -44,6 +49,7 @@ export function MobileHomeUsageTab(props: {
   const connected = host != null && props.hostStates[host.id] === 'connected'
   const [refreshingHostId, setRefreshingHostId] = useState<string | null>(null)
   const refreshing = host != null && refreshingHostId === host.id
+  const { requestRemove, dialogs } = useRemoveManagedAccount(client)
 
   // Why: the host pushes the refreshed usage over accounts.subscribe too, so the reply goes unread.
   const refresh = useCallback(async () => {
@@ -100,6 +106,7 @@ export function MobileHomeUsageTab(props: {
             snapshot={props.accountsByHost[host.id] ?? null}
             first={!props.stats}
             onOpenAccounts={props.onOpenAccounts}
+            onRemoveAccount={requestRemove}
           />
         ) : (
           <UsageEmpty
@@ -107,6 +114,12 @@ export function MobileHomeUsageTab(props: {
           />
         )}
       </ScrollView>
+      <UsageAddAccountButton
+        client={client}
+        connected={connected}
+        bottomInset={props.bottomInset}
+      />
+      {dialogs}
     </View>
   )
 }
@@ -117,6 +130,7 @@ function HostUsage(props: {
   snapshot: AccountsSnapshot | null
   first: boolean
   onOpenAccounts: (hostId: string) => void
+  onRemoveAccount: (account: RemovableAccount) => void
 }) {
   const t = useMobileTranslation()
   useMobileColorScheme()
@@ -182,6 +196,16 @@ function HostUsage(props: {
                 now={now}
                 reducedMotion={reducedMotion}
                 onPress={() => props.onOpenAccounts(props.host.id)}
+                onLongPress={
+                  card.accountId !== null && card.email !== null
+                    ? () =>
+                        props.onRemoveAccount({
+                          provider: section.provider,
+                          accountId: card.accountId as string,
+                          email: card.email as string
+                        })
+                    : undefined
+                }
               />
             ))}
           </View>

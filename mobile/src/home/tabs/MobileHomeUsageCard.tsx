@@ -19,6 +19,8 @@ export function UsageCard(props: {
   now: number
   reducedMotion: boolean
   onPress: () => void
+  /** Only managed accounts offer it; the System default login has nothing to remove. */
+  onLongPress?: () => void
 }) {
   const t = useMobileTranslation()
   useMobileColorScheme()
@@ -47,6 +49,7 @@ export function UsageCard(props: {
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={props.onPress}
+      onLongPress={props.onLongPress}
     >
       <Animated.View
         style={[

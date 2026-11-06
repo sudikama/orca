@@ -294,6 +294,30 @@
       "pairingInvalidMessage": "Re-pair this phone with your desktop to see its accounts.",
       "fableWindow": "Fable",
       "mcpWindow": "MCP"
+    },
+    "add": {
+      "title": "Add account",
+      "choose": "Sign in on the host. Each login becomes its own account.",
+      "starting": "Starting {{agent}} sign-in on the host…",
+      "done": "{{agent}} account added.",
+      "cancelled": "Sign-in was cancelled.",
+      "retry": "Try again",
+      "verifying": "Verifying sign-in…",
+      "step1": "1. Open the {{agent}} sign-in page and sign in.",
+      "openPage": "Open sign-in page",
+      "untrusted": "The host sent a page that is not the provider’s sign-in.",
+      "step2Device": "2. Enter this code on that page.",
+      "copyCode": "Copy code",
+      "step2Paste": "2. Copy the code it shows and paste it here.",
+      "codePlaceholder": "Sign-in code",
+      "submitCode": "Submit code",
+      "waiting": "Waiting for you to finish signing in…"
+    },
+    "remove": {
+      "title": "Remove account?",
+      "message": "{{email}} will be signed out of this host. You can add it again later.",
+      "confirm": "Remove",
+      "failed": "Could not remove account"
     }
   },
   "agentHistory": {
