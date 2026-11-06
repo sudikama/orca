@@ -1,6 +1,8 @@
+import { hasUsageData } from '../../../../src/shared/usage-provider-windows'
 import {
   getActiveProviderRateLimits,
   getInactiveProviderUsage,
+  getOtherUsageProviders,
   hasActiveProviderUsage,
   hasRenderableUsage,
   type AccountsSnapshot,
@@ -87,6 +89,29 @@ export function selectHomeUsageCards(
     })
   }
   return cards.sort((left, right) => Number(right.active) - Number(left.active))
+}
+
+export type HomeOtherUsageSection = {
+  provider: ProviderRateLimits['provider']
+  updatedAt: number | null
+  card: HomeUsageCard
+}
+
+/** Usage-only providers (OpenCode Go, Antigravity, ...): one card each in the host's order, no managed accounts. */
+export function selectHomeOtherUsageSections(snapshot: AccountsSnapshot): HomeOtherUsageSection[] {
+  return getOtherUsageProviders(snapshot).map((limits) => ({
+    provider: limits.provider,
+    updatedAt: limits.updatedAt > 0 ? limits.updatedAt : null,
+    card: {
+      accountId: null,
+      email: null,
+      subtitle: limits.error ?? null,
+      active: true,
+      limits,
+      fetching: limits.status === 'fetching',
+      metered: hasUsageData(limits)
+    }
+  }))
 }
 
 /** The providers with usage to show on one desktop, Claude before Codex. */
