@@ -22,6 +22,7 @@ const PROVIDER_TITLES: Record<HostAccountSignInProvider, string> = {
   claude: 'Claude',
   codex: 'Codex'
 }
+const ADD_PROVIDERS: readonly HostAccountSignInProvider[] = ['claude', 'codex']
 
 function providerIcon(provider: HostAccountSignInProvider): ReactNode {
   return provider === 'claude' ? (
@@ -55,7 +56,7 @@ export function AddAccountSheet(props: {
             {t('accounts.add.choose', 'Sign in on the host. Each login becomes its own account.')}
           </Text>
           <ListGroup>
-            {(Object.keys(PROVIDER_TITLES) as HostAccountSignInProvider[]).map((provider) => (
+            {ADD_PROVIDERS.map((provider) => (
               <ListRow
                 key={provider}
                 title={PROVIDER_TITLES[provider]}

@@ -23,13 +23,24 @@ import { formatTimeAgo } from '../../worktree/agent-row-display'
 import { homeListStyles } from '../home-list-styles'
 import { MobileHomeSectionHeading } from '../MobileHomeSectionHeading'
 import { MobileHomeStats } from '../MobileHomeStats'
-import { selectHomeOtherUsageSections, selectHomeUsageSections } from './home-usage-cards'
+import {
+  selectHomeOtherUsageSections,
+  selectHomeUsageSections,
+  type HomeUsageCard
+} from './home-usage-cards'
 import { UsageCard } from './MobileHomeUsageCard'
 import { MobileHomeHostPill, useHomeTabHost } from './MobileHomeHostPill'
 import { MobileHomeTabHeader, MobileHomeTabHeaderButton } from './MobileHomeTabHeader'
 import { UsageAddAccountButton } from './UsageAddAccountButton'
 
 const PROVIDER_TITLES: Record<ProviderKey, string> = { claude: 'Claude Code', codex: 'Codex' }
+
+/** System default has no managed login to remove, so only cards with an id and email qualify. */
+function removableAccount(provider: ProviderKey, card: HomeUsageCard): RemovableAccount | null {
+  return card.accountId !== null && card.email !== null
+    ? { provider, accountId: card.accountId, email: card.email }
+    : null
+}
 
 /** Usage: agent account quota on one desktop, after the totals across all of them. */
 export function MobileHomeUsageTab(props: {
@@ -187,27 +198,21 @@ function HostUsage(props: {
             }
           />
           <View style={homeListStyles.group}>
-            {section.cards.map((card, cardIndex) => (
-              <UsageCard
-                key={card.accountId ?? 'default'}
-                provider={section.provider}
-                card={card}
-                separated={cardIndex > 0}
-                now={now}
-                reducedMotion={reducedMotion}
-                onPress={() => props.onOpenAccounts(props.host.id)}
-                onLongPress={
-                  card.accountId !== null && card.email !== null
-                    ? () =>
-                        props.onRemoveAccount({
-                          provider: section.provider,
-                          accountId: card.accountId as string,
-                          email: card.email as string
-                        })
-                    : undefined
-                }
-              />
-            ))}
+            {section.cards.map((card, cardIndex) => {
+              const removable = removableAccount(section.provider, card)
+              return (
+                <UsageCard
+                  key={card.accountId ?? 'default'}
+                  provider={section.provider}
+                  card={card}
+                  separated={cardIndex > 0}
+                  now={now}
+                  reducedMotion={reducedMotion}
+                  onPress={() => props.onOpenAccounts(props.host.id)}
+                  onLongPress={removable ? () => props.onRemoveAccount(removable) : undefined}
+                />
+              )
+            })}
           </View>
         </View>
       ))}
