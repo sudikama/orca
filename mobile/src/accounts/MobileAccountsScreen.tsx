@@ -280,35 +280,41 @@ export function MobileAccountsScreen() {
     )
   }
 
-  // Every other provider desktop shows usage for; usage only, since accounts are managed on desktop.
+  // Each usage-only provider gets its own section like Claude/Codex; the host reports a single signed-in login for them.
   const renderOtherProviders = () => {
     const providers = snapshot ? getOtherUsageProviders(snapshot) : []
     if (providers.length === 0) {
       return null
     }
     return (
-      <View>
-        <SectionHeader title={t('accounts.screen.otherAgents', 'Other agents')} />
-        <ListGroup style={styles.group}>
-          {providers.map((limits) => (
-            <ListRow
-              key={limits.provider}
+      <>
+        {providers.map((limits) => (
+          <View key={limits.provider}>
+            <SectionHeader
               title={getProviderDisplayName(limits.provider)}
-              leading={<MobileAgentIcon agentId={limits.provider} size={16} />}
-              detail={
-                <>
-                  <ProviderUsageWindows limits={limits} now={now} />
-                  {limits.error ? (
-                    <Text style={styles.errorText} numberOfLines={1}>
-                      {limits.error}
-                    </Text>
-                  ) : null}
-                </>
-              }
+              icon={<MobileAgentIcon agentId={limits.provider} size={14} />}
             />
-          ))}
-        </ListGroup>
-      </View>
+            <ListGroup style={styles.group}>
+              <ListRow
+                key="default"
+                title={t('accounts.screen.default', 'System default')}
+                subtitle={t('accounts.screen.agentLogin', "Use the agent's own login")}
+                detail={
+                  <>
+                    <ProviderUsageWindows limits={limits} now={now} />
+                    {limits.error ? (
+                      <Text style={styles.errorText} numberOfLines={1}>
+                        {limits.error}
+                      </Text>
+                    ) : null}
+                  </>
+                }
+                selected
+              />
+            </ListGroup>
+          </View>
+        ))}
+      </>
     )
   }
 
