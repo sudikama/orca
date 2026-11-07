@@ -22,3 +22,8 @@ export const AntigravityChatSignInCompleteParams = z.strictObject({
   flowId: z.string().min(1).max(64),
   callbackUrl: z.string().min(1).max(16_384)
 })
+
+export const AntigravityAccountUsageParams = z.strictObject({
+  /** Read every account's quota again instead of serving the recent answer. */
+  refresh: z.boolean().optional()
+})

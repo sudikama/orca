@@ -311,13 +311,17 @@
       "step2Paste": "2. Copy the code it shows and paste it here.",
       "codePlaceholder": "Sign-in code",
       "submitCode": "Submit code",
-      "waiting": "Waiting for you to finish signing in…"
+      "waiting": "Waiting for you to finish signing in…",
+      "doneSaved": "{{agent}} account saved. Switch to it from the Accounts page."
     },
     "remove": {
       "title": "Remove account?",
       "message": "{{email}} will be signed out of this host. You can add it again later.",
       "confirm": "Remove",
       "failed": "Could not remove account"
+    },
+    "antigravity": {
+      "unknown": "Unknown account"
     }
   },
   "agentHistory": {

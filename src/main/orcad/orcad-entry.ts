@@ -17,6 +17,7 @@ import { bindOrcadStopTerminalAdmission } from './orcad-stop-terminal-admission'
 import type { OrcadHandle, OrcadOptions } from './orcad-start-contract'
 import { beginOrcadIdleExit } from './orcad-managed-idle-exit-host'
 import { orcadAutomationsKeepHostBusy, startOrcadAutomations } from './orcad-automations'
+import { startOrcadAutoSleep } from './orcad-auto-sleep'
 import {
   changedAiVaultSearchSettings,
   type AiVaultSearchSettings
@@ -306,6 +307,7 @@ async function startOrcadRuntime(
   registerCleanup(() => rpc.stop())
   await timed('rpc', () => rpc.start())
   startOrcadAutomations(runtime, profileStore, registerCleanup)
+  startOrcadAutoSleep(runtime, registerCleanup)
   const pushService = DesktopPushService.create({
     runtime,
     runtimeRpc: rpc,

@@ -3,7 +3,7 @@ import type {
   CodexRateLimitAccountsState
 } from './managed-account-types'
 
-export type HostAccountSignInProvider = 'claude' | 'codex'
+export type HostAccountSignInProvider = 'claude' | 'codex' | 'antigravity'
 
 export type HostAccountSignInPhase =
   | 'starting'
@@ -18,7 +18,7 @@ export type HostAccountSignInPrompt = {
   url: string
   /** Codex's one-time device code, typed into that page. */
   userCode: string | null
-  /** Claude shows a code after sign-in that has to come back to the host. */
+  /** Claude and Antigravity show a code after sign-in that has to come back to the host. */
   needsCode: boolean
 }
 
@@ -62,7 +62,8 @@ export const HOST_ACCOUNT_SIGN_IN_SETTLED_PHASES: ReadonlySet<HostAccountSignInP
 // Why a fixed list: the host publishes this page and the client opens it, so neither trusts the other.
 const SIGN_IN_PAGE_HOSTS: Record<HostAccountSignInProvider, ReadonlySet<string>> = {
   claude: new Set(['claude.com', 'claude.ai']),
-  codex: new Set(['auth.openai.com'])
+  codex: new Set(['auth.openai.com']),
+  antigravity: new Set(['accounts.google.com'])
 }
 
 /** Whether `url` is an https page of the provider's own sign-in host. */

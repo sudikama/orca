@@ -7,6 +7,7 @@ import {
   useRemoveManagedAccount,
   type RemovableAccount
 } from '../../accounts/add-account/use-remove-managed-account'
+import { useAntigravityAccounts } from '../../accounts/add-account/use-antigravity-accounts'
 import type { AccountsSnapshot, ProviderKey } from '../../components/AccountUsage'
 import { useNow } from '../../hooks/use-now'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
@@ -28,6 +29,7 @@ import {
   selectHomeUsageSections,
   type HomeUsageCard
 } from './home-usage-cards'
+import { selectAntigravityCards } from './antigravity-usage-cards'
 import { UsageCard } from './MobileHomeUsageCard'
 import { MobileHomeHostPill, useHomeTabHost } from './MobileHomeHostPill'
 import { MobileHomeTabHeader, MobileHomeTabHeaderButton } from './MobileHomeTabHeader'
@@ -60,7 +62,12 @@ export function MobileHomeUsageTab(props: {
   const connected = host != null && props.hostStates[host.id] === 'connected'
   const [refreshingHostId, setRefreshingHostId] = useState<string | null>(null)
   const refreshing = host != null && refreshingHostId === host.id
-  const { requestRemove, dialogs } = useRemoveManagedAccount(client)
+  const antigravity = useAntigravityAccounts(client, connected)
+  const { requestRemove, dialogs } = useRemoveManagedAccount(client, antigravity.reload)
+  const antigravityCards =
+    antigravity.data && antigravity.data.state.accounts.length > 0
+      ? selectAntigravityCards(antigravity.data)
+      : []
 
   // Why: the host pushes the refreshed usage over accounts.subscribe too, so the reply goes unread.
   const refresh = useCallback(async () => {
@@ -69,13 +76,16 @@ export function MobileHomeUsageTab(props: {
     }
     setRefreshingHostId(host.id)
     try {
-      await client.sendRequest('accounts.list', { refreshUsage: true })
+      await Promise.all([
+        client.sendRequest('accounts.list', { refreshUsage: true }),
+        antigravity.refresh()
+      ])
     } catch {
       // A failed refresh leaves the streamed usage on screen.
     } finally {
       setRefreshingHostId((current) => (current === host.id ? null : current))
     }
-  }, [client, host, refreshing])
+  }, [antigravity, client, host, refreshing])
 
   return (
     <View style={styles.screen}>
@@ -116,6 +126,7 @@ export function MobileHomeUsageTab(props: {
             connected={connected}
             snapshot={props.accountsByHost[host.id] ?? null}
             first={!props.stats}
+            antigravityCards={antigravityCards}
             onOpenAccounts={props.onOpenAccounts}
             onRemoveAccount={requestRemove}
           />
@@ -129,6 +140,7 @@ export function MobileHomeUsageTab(props: {
         client={client}
         connected={connected}
         bottomInset={props.bottomInset}
+        onClosed={antigravity.reload}
       />
       {dialogs}
     </View>
@@ -140,6 +152,7 @@ function HostUsage(props: {
   connected: boolean
   snapshot: AccountsSnapshot | null
   first: boolean
+  antigravityCards: readonly HomeUsageCard[]
   onOpenAccounts: (hostId: string) => void
   onRemoveAccount: (account: RemovableAccount) => void
 }) {
@@ -169,8 +182,12 @@ function HostUsage(props: {
     )
   }
   const sections = selectHomeUsageSections(props.snapshot)
-  const otherSections = selectHomeOtherUsageSections(props.snapshot)
-  if (sections.length === 0 && otherSections.length === 0) {
+  const hasAntigravityAccounts = props.antigravityCards.length > 0
+  // With saved accounts, Antigravity gets a card per account instead of the host's single login.
+  const otherSections = selectHomeOtherUsageSections(props.snapshot).filter(
+    (section) => !(hasAntigravityAccounts && section.provider === 'antigravity')
+  )
+  if (sections.length === 0 && otherSections.length === 0 && !hasAntigravityAccounts) {
     return (
       <UsageEmpty
         message={t('home.usage.addAccounts', 'Add accounts from desktop Settings → Accounts.')}
@@ -216,11 +233,42 @@ function HostUsage(props: {
           </View>
         </View>
       ))}
+      {hasAntigravityAccounts ? (
+        <View>
+          <MobileHomeSectionHeading
+            title={getProviderDisplayName('antigravity')}
+            first={props.first && sections.length === 0}
+          />
+          <View style={homeListStyles.group}>
+            {props.antigravityCards.map((card, cardIndex) => (
+              <UsageCard
+                key={card.accountId ?? 'default'}
+                provider="antigravity"
+                card={card}
+                separated={cardIndex > 0}
+                now={now}
+                reducedMotion={reducedMotion}
+                onPress={() => props.onOpenAccounts(props.host.id)}
+                onLongPress={
+                  card.accountId !== null && card.email !== null && !card.active
+                    ? () =>
+                        props.onRemoveAccount({
+                          provider: 'antigravity',
+                          accountId: card.accountId ?? '',
+                          email: card.email ?? ''
+                        })
+                    : undefined
+                }
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
       {otherSections.map((section, index) => (
         <View key={section.provider}>
           <MobileHomeSectionHeading
             title={getProviderDisplayName(section.provider)}
-            first={props.first && sections.length === 0 && index === 0}
+            first={props.first && sections.length === 0 && !hasAntigravityAccounts && index === 0}
             aside={
               section.updatedAt == null
                 ? undefined

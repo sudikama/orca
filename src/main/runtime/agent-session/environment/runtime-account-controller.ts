@@ -1,4 +1,5 @@
 import type { ClaudeAccountService } from '../../../claude-accounts/service'
+import { signInAntigravityForDevice } from '../../../antigravity/antigravity-device-sign-in'
 import { hasAppEnvironment } from '../../../../shared/app-environment'
 import { getManagedDataAccountService } from '../../../managed-data-accounts/service'
 import type {
@@ -285,6 +286,10 @@ export class RuntimeAccountController {
     provider: HostAccountSignInProvider,
     channel: HostAccountSignInChannel
   ): Promise<Pick<HostAccountSignInStatus, 'claude' | 'codex'>> {
+    if (provider === 'antigravity') {
+      await signInAntigravityForDevice(channel)
+      return {}
+    }
     const { claudeAccounts, codexAccounts } = this.requireServices()
     return provider === 'claude'
       ? { claude: await claudeAccounts.addAccountWithPastedCode(channel) }

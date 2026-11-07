@@ -15,6 +15,8 @@ export function UsageAddAccountButton(props: {
   client: RpcClient | null
   connected: boolean
   bottomInset: number
+  /** The sheet closed; an account may have been added, so the lists should read again. */
+  onClosed?: () => void
 }) {
   useMobileColorScheme()
   const t = useMobileTranslation()
@@ -36,7 +38,11 @@ export function UsageAddAccountButton(props: {
       >
         <Plus size={26} color={colors.bgBase} />
       </Pressable>
-      <AddAccountSheet visible={open} client={props.client} onClose={() => setOpen(false)} />
+      <AddAccountSheet visible={open} client={props.client} onClose={() => {
+          setOpen(false)
+          props.onClosed?.()
+        }}
+      />
     </>
   )
 }

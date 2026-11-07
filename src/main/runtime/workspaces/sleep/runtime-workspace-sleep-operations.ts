@@ -19,6 +19,9 @@ export abstract class RuntimeWorkspaceSleepOperations extends OrcaRuntimeWithRes
     worktreeSelector: string
   ): Promise<RuntimeWorktreeTerminalSleepResult>
 
+  /** When each workspace was last opened by a phone or window; auto sleep counts it as activity. */
+  readonly workspaceReopenedAt = new Map<string, number>()
+
   private workspaceSleepCoordinator: WorkspaceSleepCoordinator | null = null
 
   private get workspaceSleep(): WorkspaceSleepCoordinator {
@@ -33,6 +36,7 @@ export abstract class RuntimeWorkspaceSleepOperations extends OrcaRuntimeWithRes
 
   /** The window or a phone opened the workspace: a sleep still running leaves its VM up. */
   noteWorkspaceReopened(worktreeId: string): void {
+    this.workspaceReopenedAt.set(worktreeId, Date.now())
     this.workspaceSleep.noteReopened(worktreeId)
   }
 

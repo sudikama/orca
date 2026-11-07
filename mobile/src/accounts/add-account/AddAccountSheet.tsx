@@ -7,6 +7,7 @@ import {
   type HostAccountSignInStatus
 } from '../../../../src/shared/host-account-sign-in-types'
 import { ClaudeIcon, OpenAIIcon } from '../../components/AgentIcons'
+import { MobileAgentIcon } from '../../components/MobileAgentIcon'
 import { BottomDrawer } from '../../components/bottom-drawer/BottomDrawer'
 import { TextField } from '../../components/composer-input/TextField'
 import { ListGroup, ListRow } from '../../components/list/ListGroup'
@@ -20,16 +21,19 @@ import { isSignInSettled, useHostSignIn } from './use-host-sign-in'
 
 const PROVIDER_TITLES: Record<HostAccountSignInProvider, string> = {
   claude: 'Claude',
-  codex: 'Codex'
+  codex: 'Codex',
+  antigravity: 'Antigravity'
 }
-const ADD_PROVIDERS: readonly HostAccountSignInProvider[] = ['claude', 'codex']
+const ADD_PROVIDERS: readonly HostAccountSignInProvider[] = ['claude', 'codex', 'antigravity']
 
 function providerIcon(provider: HostAccountSignInProvider): ReactNode {
-  return provider === 'claude' ? (
-    <ClaudeIcon size={16} />
-  ) : (
-    <OpenAIIcon size={16} color={colors.textPrimary} />
-  )
+  if (provider === 'claude') {
+    return <ClaudeIcon size={16} />
+  }
+  if (provider === 'codex') {
+    return <OpenAIIcon size={16} color={colors.textPrimary} />
+  }
+  return <MobileAgentIcon agentId="antigravity" size={16} />
 }
 
 /** Adds an agent login on the host from the phone: the host runs the login, the phone opens its page and relays the code. */
@@ -48,7 +52,13 @@ export function AddAccountSheet(props: {
   }
 
   return (
-    <BottomDrawer visible={props.visible} onClose={close} onAfterClose={reset}>
+    <BottomDrawer
+      visible={props.visible}
+      onClose={close}
+      onAfterClose={() => {
+        reset()
+          }}
+    >
       <Text style={styles.title}>{t('accounts.add.title', 'Add account')}</Text>
       {view.kind === 'idle' ? (
         <>
@@ -112,7 +122,13 @@ function ActiveSignIn(props: {
     return (
       <>
         <Text style={styles.message}>
-          {t('accounts.add.done', '{{agent}} account added.', { agent })}
+          {status.provider === 'antigravity'
+            ? t(
+                'accounts.add.doneSaved',
+                '{{agent}} account saved. Switch to it from the Accounts page.',
+                { agent }
+              )
+            : t('accounts.add.done', '{{agent}} account added.', { agent })}
         </Text>
         <View style={styles.actions}>
           <Button primary label={t('common.done', 'Done')} onPress={props.onDone} />

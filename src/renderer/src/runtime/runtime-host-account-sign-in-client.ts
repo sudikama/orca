@@ -28,7 +28,8 @@ const RETRY_DELAY_MS = 2_000
 const NOT_ACTIVE = 'This sign-in is no longer active in this client.'
 const CANCELLED_MESSAGE: Record<HostAccountSignInProvider, string> = {
   claude: 'Claude sign-in was cancelled.',
-  codex: CODEX_LOGIN_CANCELLED_MESSAGE
+  codex: CODEX_LOGIN_CANCELLED_MESSAGE,
+  antigravity: 'Antigravity sign-in was cancelled.'
 }
 
 /** Per-provider host sign-in: checking → starting → following → settled. Register before await so Cancel persists until host names/acknowledges its flow, retrying after answers. Pin original pairing so another machine never receives the code. */

@@ -1,3 +1,5 @@
+import type { ProviderRateLimits } from './rate-limit-types'
+
 export type AntigravityAccountSummary = {
   id: string
   email: string | null
@@ -54,4 +56,16 @@ export type AntigravityChatSignInStatus = {
 export type AntigravityAccountTarget = {
   runtime: 'host' | 'wsl'
   wslDistro?: string | null
+}
+
+/** One saved account's quota as the host last read it; `limits` is null until the first read ends. */
+export type AntigravityAccountUsage = {
+  accountId: string
+  limits: ProviderRateLimits | null
+  fetching: boolean
+}
+
+export type AntigravityAccountUsageState = {
+  state: AntigravityAccountState
+  usage: AntigravityAccountUsage[]
 }

@@ -61,6 +61,7 @@ export function MobileSessionTabStrip({
   } = controller
   const tabBarKeepsKeyboard = useKeyboardPersistingTaps('handled')
   const lastTabTapRef = useRef<{ id: string; at: number } | null>(null)
+  const longPressedTabRef = useRef<(typeof visibleTabs)[number] | null>(null)
   const now = useNow(60_000)
   const tabStates = useMemo(() => {
     const states = new Map<string, AgentDotState>()
@@ -220,7 +221,16 @@ export function MobileSessionTabStrip({
                 accessibilityState={{ selected: tab.id === activeSessionTabId }}
                 onLongPress={() => {
                   triggerMediumImpact()
-                  openSessionTabActionSheetAfterKeyboardDismiss(tab)
+                  // Open once the finger lifts: a sheet that appears under a touch still in flight
+                  // can take its release as a tap on its backdrop and close at once.
+                  longPressedTabRef.current = tab
+                }}
+                onPressOut={() => {
+                  const longPressed = longPressedTabRef.current
+                  longPressedTabRef.current = null
+                  if (longPressed?.id === tab.id) {
+                    openSessionTabActionSheetAfterKeyboardDismiss(longPressed)
+                  }
                 }}
                 delayLongPress={400}
               >

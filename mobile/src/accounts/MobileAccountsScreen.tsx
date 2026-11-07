@@ -9,6 +9,8 @@ import { MobileAccountsLoadState } from './MobileAccountsLoadState'
 import { colors, spacing } from '../theme/mobile-theme'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../i18n/use-mobile-translation'
+import { AntigravityAccountsSection } from './AntigravityAccountsSection'
+import { OtherProviderUsage } from './OtherProviderUsage'
 import { styles } from './mobile-accounts-screen-styles'
 import { useNow } from '../hooks/use-now'
 import { ClaudeIcon, OpenAIIcon } from '../components/AgentIcons'
@@ -21,7 +23,6 @@ import {
   getOtherUsageProviders,
   hasActiveProviderUsage
 } from '../components/AccountUsage'
-import { MobileAgentIcon } from '../components/MobileAgentIcon'
 import { getProviderDisplayName } from '../../../src/shared/usage-provider-windows'
 import { ProviderUsageWindows } from './ProviderUsageWindows'
 import {
@@ -57,6 +58,7 @@ export function MobileAccountsScreen() {
   const [snapshot, setSnapshot] = useState<AccountsSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshToken, setRefreshToken] = useState(0)
   const [busyAccountId, setBusyAccountId] = useState<string | null>(null)
   const [clockEnabled, setClockEnabled] = useState(false)
   const [notice, setNotice] = useState<AccountsNotice | null>(null)
@@ -123,6 +125,7 @@ export function MobileAccountsScreen() {
       return
     }
     setRefreshing(true)
+    setRefreshToken((token) => token + 1)
     try {
       const res = await client.sendRequest('accounts.list')
       if (res.ok) {
@@ -280,43 +283,9 @@ export function MobileAccountsScreen() {
     )
   }
 
-  // Each usage-only provider gets its own section like Claude/Codex; the host reports a single signed-in login for them.
-  const renderOtherProviders = () => {
-    const providers = snapshot ? getOtherUsageProviders(snapshot) : []
-    if (providers.length === 0) {
-      return null
-    }
-    return (
-      <>
-        {providers.map((limits) => (
-          <View key={limits.provider}>
-            <SectionHeader
-              title={getProviderDisplayName(limits.provider)}
-              icon={<MobileAgentIcon agentId={limits.provider} size={14} />}
-            />
-            <ListGroup style={styles.group}>
-              <ListRow
-                key="default"
-                title={t('accounts.screen.default', 'System default')}
-                subtitle={t('accounts.screen.agentLogin', "Use the agent's own login")}
-                detail={
-                  <>
-                    <ProviderUsageWindows limits={limits} now={now} />
-                    {limits.error ? (
-                      <Text style={styles.errorText} numberOfLines={1}>
-                        {limits.error}
-                      </Text>
-                    ) : null}
-                  </>
-                }
-                selected
-              />
-            </ListGroup>
-          </View>
-        ))}
-      </>
-    )
-  }
+  const usageOnly = snapshot ? getOtherUsageProviders(snapshot) : []
+  const otherProviders = usageOnly.filter((limits) => limits.provider !== 'antigravity')
+  const antigravityLimits = usageOnly.find((limits) => limits.provider === 'antigravity') ?? null
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -360,7 +329,18 @@ export function MobileAccountsScreen() {
           <>
             {renderProviderSection('claude')}
             {renderProviderSection('codex')}
-            {renderOtherProviders()}
+            <AntigravityAccountsSection
+              client={client}
+              connected={connState === 'connected'}
+              now={now}
+              refreshToken={refreshToken}
+              fallback={
+                antigravityLimits ? <OtherProviderUsage limits={antigravityLimits} now={now} /> : null
+              }
+            />
+            {otherProviders.map((limits) => (
+              <OtherProviderUsage key={limits.provider} limits={limits} now={now} />
+            ))}
             <View style={styles.footerHint}>
               <User size={14} color={colors.textMuted} />
               <Text style={styles.footerHintText}>

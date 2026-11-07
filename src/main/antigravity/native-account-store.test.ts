@@ -12,6 +12,10 @@ import { AntigravityAccountService } from './native-account-service'
 import type { AntigravityCredentialIdentity } from './native-credential-codec'
 import { credential, harness, refreshedWithoutIdToken } from './native-account-test-fixtures'
 import { createAntigravityWindowsCredentialBackend } from './native-windows-credentials'
+import {
+  describeOrcadHostKeyGap,
+  describeOrcadPlaintextOptOut
+} from '../orcad/orcad-secret-protection-gap'
 import { parseAntigravityWindowsSnapshot } from './native-windows-token-decode'
 import { createFakeWindowsSecurity } from '../../shared/windows-security-addon.test-fixture'
 import {
@@ -271,6 +275,24 @@ describe('protected Antigravity account snapshots', () => {
       expect(readFileSync(path).equals(before)).toBe(true)
     }
   )
+
+  it('accepts the headless host key gap but still refuses plaintext storage', () => {
+    const sealed = (gap: string) => ({
+      isEncryptionAvailable: () => true,
+      describeProtectionGap: () => gap,
+      encryptString: (value: string) => Buffer.from(`sealed:${Buffer.from(value).toString('base64')}`),
+      decryptString: (value: Buffer) =>
+        Buffer.from(value.toString().slice(7), 'base64').toString()
+    })
+    const store = createEncryptedAntigravityAccountStore(join(dir, 'vault'))
+    const empty = { accounts: [], selectedAccountId: null }
+    setSecretStore(sealed(describeOrcadHostKeyGap(true)))
+    store.write(empty)
+    expect(store.read()).toEqual(empty)
+    setSecretStore(sealed(describeOrcadPlaintextOptOut()))
+    expect(() => store.write(empty)).toThrow('Protected secret storage')
+    expect(() => store.read()).toThrow('Protected secret storage')
+  })
 
   it('keeps the selected account launchable after agy refreshes its token without an id_token', async () => {
     const h = harness()

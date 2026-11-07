@@ -1,6 +1,7 @@
 import { existsSync, lstatSync, mkdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { getSecretStore } from '../../shared/secret-store'
+import { describeOrcadHostKeyGap } from '../orcad/orcad-secret-protection-gap'
 import { writeCredentialFileAtomic } from '../credentials/integration-credential-file'
 import type { AntigravityAccountSummary } from '../../shared/antigravity-account-types'
 import { parseAntigravityNativeCredential } from './native-credential-codec'
@@ -36,9 +37,17 @@ function isAccount(value: unknown): value is StoredAntigravityAccount {
   )
 }
 
+// A headless host keeps its sealing key beside the vault. agy's own token file sits in that same
+// private account, so this adds no exposure; plaintext and disposable-profile gaps stay refused.
+const ACCEPTED_GAPS: ReadonlySet<string> = new Set([
+  describeOrcadHostKeyGap(true),
+  describeOrcadHostKeyGap(false)
+])
+
 function requireProtection(): void {
   const secrets = getSecretStore()
-  if (!secrets.isEncryptionAvailable() || secrets.describeProtectionGap() !== null) {
+  const gap = secrets.describeProtectionGap()
+  if (!secrets.isEncryptionAvailable() || (gap !== null && !ACCEPTED_GAPS.has(gap))) {
     throw new Error(
       'Protected secret storage is unavailable; Antigravity accounts were not changed.'
     )

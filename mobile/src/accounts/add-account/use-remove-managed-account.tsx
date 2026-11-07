@@ -4,18 +4,26 @@ import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 import type { RpcClient } from '../../transport/rpc-client'
 
 export type RemovableAccount = {
-  provider: 'claude' | 'codex'
+  provider: 'claude' | 'codex' | 'antigravity'
   accountId: string
   email: string
 }
 
-const REMOVE_METHODS = {
-  claude: 'accounts.removeClaude',
-  codex: 'accounts.removeCodex'
-} as const
+function removeRequest(account: RemovableAccount): { method: string; params: object } {
+  if (account.provider === 'antigravity') {
+    return {
+      method: 'accounts.antigravityRemove',
+      params: { target: { runtime: 'host' }, accountId: account.accountId }
+    }
+  }
+  return {
+    method: account.provider === 'claude' ? 'accounts.removeClaude' : 'accounts.removeCodex',
+    params: { accountId: account.accountId }
+  }
+}
 
 /** Removes one managed login on the host after a confirmation; the usage list refreshes from the account stream. */
-export function useRemoveManagedAccount(client: RpcClient | null) {
+export function useRemoveManagedAccount(client: RpcClient | null, onRemoved?: () => void) {
   const t = useMobileTranslation()
   const [pending, setPending] = useState<RemovableAccount | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -27,16 +35,17 @@ export function useRemoveManagedAccount(client: RpcClient | null) {
       return
     }
     try {
-      const res = await client.sendRequest(REMOVE_METHODS[account.provider], {
-        accountId: account.accountId
-      })
+      const { method, params } = removeRequest(account)
+      const res = await client.sendRequest(method, params)
       if (!res.ok) {
         setNotice(res.error.message)
+      } else {
+        onRemoved?.()
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : String(error))
     }
-  }, [client, pending])
+  }, [client, onRemoved, pending])
 
   const dialogs = (
     <>

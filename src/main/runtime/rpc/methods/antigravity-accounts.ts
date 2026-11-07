@@ -4,9 +4,11 @@ import type { OrcaRuntimeService } from '../../orca-runtime'
 import {
   AntigravityAccountMutationParams,
   AntigravityAccountTargetParams,
+  AntigravityAccountUsageParams,
   AntigravityChatSignInCompleteParams,
   AntigravityChatSignInFlowParams
 } from '../../../../shared/rpc-contract/antigravity-accounts-params'
+import { readAntigravityAccountUsage } from '../../../antigravity/antigravity-account-usage'
 import { getAntigravityAccountService } from '../../../antigravity/native-account-host'
 import {
   cancelAntigravityChatSignIn,
@@ -97,5 +99,11 @@ export const ANTIGRAVITY_ACCOUNT_METHODS = [
     params: AntigravityChatSignInCompleteParams,
     handler: async ({ flowId, callbackUrl }, ctx) =>
       completeAntigravityChatSignIn(signInOwner(ctx), flowId, callbackUrl)
+  }),
+  defineMethod({
+    name: 'accounts.antigravityUsage',
+    permission: 'workspace',
+    params: AntigravityAccountUsageParams,
+    handler: async ({ refresh }) => readAntigravityAccountUsage(refresh === true)
   })
 ] as const
