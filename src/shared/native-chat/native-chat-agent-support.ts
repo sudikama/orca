@@ -1,6 +1,12 @@
 import type { TuiAgent } from '../agent-launch/catalog/tui-agent'
 
-export type NativeChatTranscriptAgent = 'claude' | 'codex' | 'grok' | 'omp' | 'opencode'
+export type NativeChatTranscriptAgent =
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'grok'
+  | 'omp'
+  | 'opencode'
 
 /** Agents whose transcripts the native chat view can parse and render. */
 export const NATIVE_CHAT_SUPPORTED_AGENT_LIST: readonly TuiAgent[] = [
@@ -11,7 +17,8 @@ export const NATIVE_CHAT_SUPPORTED_AGENT_LIST: readonly TuiAgent[] = [
   'omp',
   'opencode',
   'opencode2',
-  'zcode'
+  'zcode',
+  'antigravity'
 ]
 
 export const NATIVE_CHAT_SUPPORTED_AGENTS: ReadonlySet<string> = new Set(
@@ -26,14 +33,22 @@ export function isNativeChatSupportedAgent(agent: string | null | undefined): bo
  *  does not establish owning-host reads, so OMP remains gated even with metadata. */
 export function nativeChatRequiresLocalTranscript(agent: string | null | undefined): boolean {
   const transcriptAgent = resolveNativeChatTranscriptAgent(agent)
-  return transcriptAgent === 'grok' || transcriptAgent === 'omp' || transcriptAgent === 'opencode'
+  return (
+    transcriptAgent === 'antigravity' ||
+    transcriptAgent === 'grok' ||
+    transcriptAgent === 'omp' ||
+    transcriptAgent === 'opencode'
+  )
 }
 
 /** Selector TUIs require key steps rather than pasted option labels. */
 export function shouldStepNativeChatAskAnswer(agent: string | null | undefined): boolean {
   const transcriptAgent = resolveNativeChatTranscriptAgent(agent)
   return (
-    transcriptAgent === 'claude' || transcriptAgent === 'codex' || transcriptAgent === 'opencode'
+    transcriptAgent === 'antigravity' ||
+    transcriptAgent === 'claude' ||
+    transcriptAgent === 'codex' ||
+    transcriptAgent === 'opencode'
   )
 }
 
@@ -57,7 +72,7 @@ export function resolveNativeChatTranscriptAgent(
   if (agent === 'opencode' || agent === 'opencode2' || agent === 'zcode') {
     return 'opencode'
   }
-  if (agent === 'codex' || agent === 'grok' || agent === 'omp') {
+  if (agent === 'antigravity' || agent === 'codex' || agent === 'grok' || agent === 'omp') {
     return agent
   }
   return null

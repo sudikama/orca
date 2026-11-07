@@ -13,6 +13,7 @@ import type { NativeChatMessage } from '../../../shared/native-chat/native-chat-
 import { resolveNativeChatTranscriptAgent } from '../../../shared/native-chat/native-chat-agent-support'
 import { resolveSessionFilePath, type ResolveSessionFileOptions } from '../session-file-resolver'
 import {
+  decodeAntigravityTranscriptLine,
   decodeClaudeTranscriptLine,
   decodeCodexTranscriptLine,
   decodeGrokTranscriptLine,
@@ -194,6 +195,7 @@ function replacementItem(
 }
 
 const TRANSCRIPT_DECODERS = {
+  antigravity: decodeAntigravityTranscriptLine,
   claude: decodeClaudeTranscriptLine,
   codex: (line: string, fallbackId: string) =>
     decodeCodexTranscriptLine(line, fallbackId, { historyImport: true }),

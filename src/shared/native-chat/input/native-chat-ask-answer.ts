@@ -5,6 +5,7 @@ import { agentJournalSubmissionKey } from '../../agent-session/journal/agent-ses
 import { STRUCTURED_AGENT_SESSION_SUBMISSION_MISSING } from '../../agent-session/requests/structured-agent-session-send-evidence'
 import type { AskPrompt, AskQuestion } from './native-chat-ask-types'
 import type { NativeChatMessage } from '../native-chat-types'
+import { resolveNativeChatTranscriptAgent } from '../native-chat-agent-support'
 import type { AsyncQuestionContributor } from './native-chat-ask'
 
 function isHumanSend(message: NativeChatMessage): boolean {
@@ -216,6 +217,44 @@ export function buildCodexAskAnswerKeys(
     groups.push({ raw: ASK_ENTER })
   }
   return groups
+}
+
+/** Antigravity lists the options with a trailing "Write-in…" row; ↓ moves, Enter commits. One write per
+ * question is safe: agy applies a burst of ↓ then Enter (verified live against agy 1.5.x). */
+export function buildAntigravityAskAnswerKeys(
+  prompt: AskPrompt,
+  selections: AskAnswerSelection[]
+): AskAnswerKeyGroup[] {
+  const groups: AskAnswerKeyGroup[] = []
+  prompt.questions.forEach((question, questionIndex) => {
+    const selection = selections[questionIndex]
+    const note = (selection?.other ?? '').trim()
+    if (note) {
+      groups.push({ raw: ASK_NEXT_ROW.repeat(question.options.length) + ASK_ENTER })
+      groups.push({ text: note }, { raw: ASK_ENTER })
+      return
+    }
+    const index = selection?.indices[0]
+    if (index !== undefined) {
+      groups.push({ raw: ASK_NEXT_ROW.repeat(index) + ASK_ENTER })
+    }
+  })
+  return groups
+}
+
+/** The keys that answer `prompt` in `agent`'s own selector. */
+export function buildAskAnswerKeysForAgent(
+  agent: string | null | undefined,
+  prompt: AskPrompt,
+  selections: AskAnswerSelection[]
+): AskAnswerKeyGroup[] {
+  const transcriptAgent = resolveNativeChatTranscriptAgent(agent)
+  if (transcriptAgent === 'codex') {
+    return buildCodexAskAnswerKeys(prompt, selections)
+  }
+  return transcriptAgent === 'antigravity'
+    ? buildAntigravityAskAnswerKeys(prompt, selections)
+    : buildAskAnswerKeys(prompt, selections)
 }
 
 /** Whether any question in `selections` carries an answer worth submitting. */

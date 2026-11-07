@@ -1,10 +1,7 @@
 import type { AgentStatusIpcPayload } from './agent-status-ipc-payload'
 import { hookRowAgentPhase } from '../lifecycle/agent-transitions'
 import { parseAskFromStatus } from '../../native-chat/input/native-chat-ask'
-import {
-  buildAskAnswerKeys,
-  buildCodexAskAnswerKeys
-} from '../../native-chat/input/native-chat-ask-answer'
+import { buildAskAnswerKeysForAgent } from '../../native-chat/input/native-chat-ask-answer'
 import { parseNativeChatApprovalEnvelope } from '../../native-chat/input/native-chat-approval-envelope'
 import {
   resolveNativeChatTranscriptAgent,
@@ -85,10 +82,7 @@ export function readAgentPromptAnswers(
   const keysByOption = new Map<string, string>()
   const options = question.options.flatMap((option, index): PendingPromptOption[] => {
     const selections = [{ indices: [index] }]
-    const groups =
-      resolveNativeChatTranscriptAgent(agent) === 'codex'
-        ? buildCodexAskAnswerKeys(ask, selections)
-        : buildAskAnswerKeys(ask, selections)
+    const groups = buildAskAnswerKeysForAgent(agent, ask, selections)
     // A pick that takes more than one keystroke needs the paced writer only Orca's views run.
     const only = groups.length === 1 ? groups[0] : undefined
     if (!only || !('raw' in only)) {

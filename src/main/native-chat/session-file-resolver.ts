@@ -1,4 +1,5 @@
 import { claudeProfileHistoryDirs } from '../claude-accounts/claude-profile-installed-router'
+import { access, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { extname, join } from 'node:path'
 import type { AgentType } from '../../shared/agent-status/contracts/agent-status-types'
@@ -6,6 +7,7 @@ import {
   resolveNativeChatTranscriptAgent,
   type NativeChatTranscriptAgent
 } from '../../shared/native-chat/native-chat-agent-support'
+import { ANTIGRAVITY_HISTORY_ROOTS } from '../../shared/antigravity-session-origin'
 import { isWslUncPath } from '../../shared/wsl-paths'
 import { walkSessionFiles } from '../ai-vault/session-scanner-discovery'
 import { resolveOmpSessionsDir } from '../ai-vault/scanners/omp/omp-session-root'
@@ -49,6 +51,41 @@ function codexAccountSessionsDirs(): string[] {
     console.warn('[session-file-resolver] could not list Codex account homes:', error)
     return []
   }
+}
+
+// agy keeps one folder per conversation: brain/<id>/.system_generated/logs/transcript.jsonl.
+const ANTIGRAVITY_CONVERSATION_ID = /^[A-Za-z0-9_-]{1,128}$/
+
+/**
+ * Where agy's conversation folders can be. `~/.gemini/<root>` follows whichever profile is active
+ * right now; with `agyp` profile switching, a conversation stays in the profile that made it, so
+ * every profile under AGYP_ROOT is searched too and a switch never hides an earlier chat.
+ */
+async function antigravityBrainRoots(): Promise<string[]> {
+  const home = homedir()
+  const roots = ANTIGRAVITY_HISTORY_ROOTS.map((root) => join(home, '.gemini', root, 'brain'))
+  const profilesRoot = process.env.AGYP_ROOT?.trim() || join(home, 'agy-profiles')
+  const profiles = await readdir(profilesRoot, { withFileTypes: true }).catch(() => [])
+  for (const entry of profiles) {
+    if (entry.isDirectory()) {
+      roots.push(join(profilesRoot, entry.name, 'brain'))
+    }
+  }
+  return roots
+}
+
+async function resolveAntigravityTranscript(sessionId: string): Promise<string | null> {
+  // The id becomes part of a path, so anything but a plain id names no conversation.
+  if (!ANTIGRAVITY_CONVERSATION_ID.test(sessionId)) {
+    return null
+  }
+  for (const root of await antigravityBrainRoots()) {
+    const path = join(root, sessionId, '.system_generated', 'logs', 'transcript.jsonl')
+    if (await access(path).then(() => true, () => false)) {
+      return path
+    }
+  }
+  return null
 }
 
 function grokSessionsDir(): string {
@@ -149,6 +186,9 @@ async function resolveSessionFileById(
     return null
   }
 
+  if (transcriptAgent === 'antigravity') {
+    return resolveAntigravityTranscript(trimmedId)
+  }
   // Explicit roots pin an account; fallback could silently read another account’s transcript.
   if (transcriptAgent === 'claude') {
     const override = options.claudeProjectsDir

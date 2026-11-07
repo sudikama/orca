@@ -24,6 +24,44 @@ export function readAntigravityToolCall(hookPayload: Record<string, unknown>): {
   }
 }
 
+/**
+ * agy's `ask_question` passes its questions as a JSON string of
+ * `[{question, options: string[], is_multi_select}]`; the cards read `{questions: [...]}`.
+ */
+export function deriveAntigravityInteractivePrompt(
+  toolName: string | undefined,
+  toolInputSource: unknown
+): string | undefined {
+  if (toolName !== 'ask_question' || typeof toolInputSource !== 'object' || !toolInputSource) {
+    return undefined
+  }
+  let raw = (toolInputSource as Record<string, unknown>).questions
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw)
+    } catch {
+      return undefined
+    }
+  }
+  if (!Array.isArray(raw)) {
+    return undefined
+  }
+  const questions = raw.flatMap((entry) => {
+    if (typeof entry !== 'object' || entry === null) {
+      return []
+    }
+    const record = entry as Record<string, unknown>
+    const question = typeof record.question === 'string' ? record.question : ''
+    const options = Array.isArray(record.options)
+      ? record.options.filter((option): option is string => typeof option === 'string')
+      : []
+    return question || options.length > 0
+      ? [{ question, multiSelect: record.is_multi_select === true, options }]
+      : []
+  })
+  return questions.length > 0 ? JSON.stringify({ questions }) : undefined
+}
+
 export function extractAntigravityToolFields(
   eventName: unknown,
   hookPayload: Record<string, unknown>
@@ -35,7 +73,14 @@ export function extractAntigravityToolFields(
       deriveToolInputPreview(toolName, toolCall.toolInputSource) ??
       deriveFallbackToolInputPreview(toolCall.toolInputSource)
     return toolUpdate(
-      { toolName, toolInput },
+      {
+        toolName,
+        toolInput,
+        interactivePrompt:
+          eventName === 'PreToolUse'
+            ? deriveAntigravityInteractivePrompt(toolName, toolCall.toolInputSource)
+            : undefined
+      },
       { hasToolInputField: toolCall.toolInputSource !== undefined }
     )
   }

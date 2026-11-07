@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from 'react'
 import {
-  buildAskAnswerKeys,
-  buildCodexAskAnswerKeys,
+  buildAskAnswerKeysForAgent,
   formatAskAnswer,
   hasAskAnswer
 } from '../../../../../src/shared/native-chat/input/native-chat-ask-answer'
@@ -20,7 +19,6 @@ import {
 } from '../mobile-native-chat-terminal-write-lock'
 import {
   nativeChatAskRequiresTerminal,
-  resolveNativeChatTranscriptAgent,
   shouldStepNativeChatAskAnswer
 } from '../../../../../src/shared/native-chat/native-chat-agent-support'
 import { buildNativeChatPasteBytes } from '../../../../../src/shared/native-chat/input/native-chat-paste-bytes'
@@ -215,10 +213,7 @@ export function useMobileNativeChatAnswerSend(args: {
             )) || fail()
           return sent && writeTurnsRef.current.get(handle) === turn
         }
-        const groups =
-          resolveNativeChatTranscriptAgent(agentRef.current) === 'codex'
-            ? buildCodexAskAnswerKeys(prompt, selections)
-            : buildAskAnswerKeys(prompt, selections)
+        const groups = buildAskAnswerKeysForAgent(agentRef.current, prompt, selections)
         for (let index = 0; index < groups.length; index += 1) {
           if (generationRef.current !== generation) {
             return false

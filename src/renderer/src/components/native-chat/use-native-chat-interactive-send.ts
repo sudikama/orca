@@ -6,12 +6,10 @@ import type { AgentType } from '../../../../shared/agent-status/contracts/agent-
 import {
   nativeChatAskRequiresTerminal,
   nativeChatStopSendsSecondEscape,
-  resolveNativeChatTranscriptAgent,
   shouldStepNativeChatAskAnswer
 } from '../../../../shared/native-chat/native-chat-agent-support'
 import {
-  buildAskAnswerKeys,
-  buildCodexAskAnswerKeys,
+  buildAskAnswerKeysForAgent,
   formatAskAnswer,
   hasAskAnswer,
   type AskAnswerSelection
@@ -97,7 +95,6 @@ export function useNativeChatInteractiveSend(
       cancelInFlight()
       // Selector TUIs ignore pasted labels; Codex uses a different key sequence.
       const stepsAnswer = !prompt.replyAsMessage && shouldStepNativeChatAskAnswer(agent)
-      const buildsCodexAnswer = resolveNativeChatTranscriptAgent(agent) === 'codex'
       // Capture the question baseline before paced/remote delivery so late settlement cannot clear a replacement question’s wait.
       const questionStatusBaseline = stepsAnswer
         ? useAppStore.getState().agentStatusByPaneKey[paneKey]
@@ -124,9 +121,7 @@ export function useNativeChatInteractiveSend(
       const handle: NativeChatSendHandle = stepsAnswer
         ? sendNativeChatAskAnswer(
             targetPtyId,
-            buildsCodexAnswer
-              ? buildCodexAskAnswerKeys(prompt, selections)
-              : buildAskAnswerKeys(prompt, selections),
+            buildAskAnswerKeysForAgent(agent, prompt, selections),
             onSettled
           )
         : sendNativeChatMessage(targetPtyId, formatAskAnswer(prompt, selections), {
