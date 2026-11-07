@@ -1,7 +1,7 @@
 import type { RpcClient } from '../../../transport/rpc-client'
 import { useMobileNativeChatModelDiscovery } from '../../use-mobile-native-chat-model-discovery'
 import { writeMobileNativeChatSessionOptions } from './mobile-native-chat-session-option-persistence'
-import { getAgentSessionOptionCatalog } from '../../../../../src/shared/agent-session/options/agent-session-option-catalog'
+import { getNativeChatSessionOptionCatalog } from '../../../../../src/shared/agent-session/options/agent-session-option-catalog'
 import type { AgentSessionOptionCatalog } from '../../../../../src/shared/agent-session/options/agent-session-option-catalog-types'
 import type { AgentSessionConversationCommand } from '../../../../../src/shared/agent-session/agent-session-conversation-command'
 import { useCallback, useMemo } from 'react'
@@ -23,12 +23,18 @@ function isAuthoritativeListing(catalog: AgentSessionOptionCatalog | null): bool
   return catalog?.listModels !== undefined && catalog.discoveredModelsAreAuthoritative === true
 }
 
+/** Codex keeps a seeded list, but the account's own models and effort levels are worth one fetch. */
+function listsHostModels(agent: string, catalog: AgentSessionOptionCatalog | null): boolean {
+  return agent === 'codex' || isAuthoritativeListing(catalog)
+}
+
 export function useMobileNativeChatSessionOptionController(args: {
   client?: RpcClient | null
   activeChatStructured: boolean
   activeSessionTabId: string | null
   agent: string | null
   dispatchCommand: (text: string) => Promise<MobileNativeChatSendOutcome>
+  pickAgentOption?: (request: { agent: string; optionId: string; value: string }) => Promise<void>
   hostId: string
   isTabChatView: (tabId: string) => boolean
   isWorking: boolean
@@ -55,6 +61,7 @@ export function useMobileNativeChatSessionOptionController(args: {
     activeSessionTabId,
     agent,
     dispatchCommand,
+    pickAgentOption,
     hostId,
     isTabChatView,
     isWorking,
@@ -87,7 +94,7 @@ export function useMobileNativeChatSessionOptionController(args: {
       !activeChatStructured &&
       activeSessionTabId !== null &&
       agent !== null &&
-      isAuthoritativeListing(getAgentSessionOptionCatalog(agent))
+      listsHostModels(agent, getNativeChatSessionOptionCatalog(agent))
   })
   const writeSettings = useCallback(
     (mutation: NativeChatSessionOptionSettingsMutation) => {
@@ -104,6 +111,7 @@ export function useMobileNativeChatSessionOptionController(args: {
     scopeKey: mobileNativeChatScopeKey(hostId, worktreeId, activeSessionTabId),
     reportedModel,
     dispatchCommand,
+    pickAgentOption,
     onAgentPicker: handleAgentPicker,
     writeSettings
   })

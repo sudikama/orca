@@ -8,7 +8,7 @@ import {
   useState,
   useSyncExternalStore
 } from 'react'
-import { getAgentSessionOptionCatalog } from '../../../../../src/shared/agent-session/options/agent-session-option-catalog'
+import { getNativeChatSessionOptionCatalog } from '../../../../../src/shared/agent-session/options/agent-session-option-catalog'
 import type {
   CatalogCommandDelivery,
   CatalogModel
@@ -34,6 +34,7 @@ import {
   matchNativeChatCatalogModelId
 } from '../../../../../src/shared/native-chat/input/native-chat-session-option-state'
 import { setBoundedScopeCacheEntry } from '../../../../../src/shared/native-chat/native-chat-scope-cache'
+import { isMobilePickerDrivenAgent } from '../mobile-native-chat-agent-picker'
 import { sayMobileNativeChatSessionOption } from './native-chat-session-option-copy'
 
 export type MobileNativeChatSessionOptionsController = {
@@ -68,6 +69,7 @@ type HookArgs = {
     command: string,
     options?: { delivery?: CatalogCommandDelivery }
   ) => Promise<MobileNativeChatSendOutcome>
+  pickAgentOption?: (request: { agent: string; optionId: string; value: string }) => Promise<void>
   onAgentPicker?: () => void
   /** Saves picks as the host's launch defaults, as desktop does. */
   writeSettings?: (mutation: NativeChatSessionOptionSettingsMutation) => void
@@ -103,7 +105,7 @@ function createMobileSurfaceEntry(args: {
   activeIdentity: { readonly current: string | null }
 }): SurfaceEntry | null {
   const { agent, identity, latest, activeIdentity } = args
-  const midSession = getAgentSessionOptionCatalog(agent)?.modelApply.midSession
+  const midSession = getNativeChatSessionOptionCatalog(agent)?.modelApply.midSession
   // Phone-only: desktop confirms a Claude model switch on its terminal screen; the phone cannot, so it never saves one as a launch default.
   const modelSwitchUnconfirmable =
     midSession?.kind === 'command' && midSession.detectAgentInteraction !== undefined
@@ -129,12 +131,30 @@ function createMobileSurfaceEntry(args: {
         throw new Error('The terminal did not accept the command.')
       }
     },
+    // Where the phone can drive the agent's own picker, model and effort are set in place.
+    ...(isMobilePickerDrivenAgent(agent) && latest.current.pickAgentOption
+      ? {
+          pickAgentOption: async (request: { optionId: string; value: string }) => {
+            if (activeIdentity.current !== identity) {
+              throw new Error('The chat changed before the setting was applied.')
+            }
+            await latest.current.pickAgentOption?.({ agent, ...request })
+            if (entry.retired) {
+              throw new Error('The tab started another agent.')
+            }
+          }
+        }
+      : {}),
     onAgentPicker: () => {
       if (activeIdentity.current === identity) {
         latest.current.onAgentPicker?.()
       }
     },
     persistSelection: (pick) => {
+      // A picker-driven pick is for this chat only: a model the account lacks must never become a launch flag.
+      if (isMobilePickerDrivenAgent(agent)) {
+        return
+      }
       // A pick that lands after the phone moved to another host's chat must not become that host's default.
       if (
         activeIdentity.current !== identity ||
@@ -166,7 +186,7 @@ export function useMobileNativeChatSessionOptions(
   args: HookArgs
 ): MobileNativeChatSessionOptionsController {
   const { agent, scopeKey, reportedModel, discoveredModels } = args
-  const catalog = agent ? getAgentSessionOptionCatalog(agent) : null
+  const catalog = agent ? getNativeChatSessionOptionCatalog(agent) : null
   const identity = agent && scopeKey && catalog ? `${scopeKey}\0${agent}` : null
   const canSwitchOmpModel = args.modelSwitchCommand === 'orca-model'
   const latest = useRef(args)

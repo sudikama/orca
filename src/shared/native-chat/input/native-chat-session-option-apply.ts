@@ -25,6 +25,7 @@ import type {
   NativeChatSessionOptionDispatchResult
 } from './native-chat-session-option-dispatch'
 import { SessionOptionApplyError } from './native-chat-session-option-apply-failure'
+import type { NativeChatPickAgentOption } from './native-chat-session-option-dispatch'
 import {
   resolveEffectiveNativeChatModelId,
   type NativeChatSessionOptionMode
@@ -36,6 +37,8 @@ type SessionOptionApplyContext = {
   getModels: () => CatalogModel[]
   getRecord: () => NativeChatSessionOptionRecord
   dispatchCommand: NativeChatSessionOptionDispatchCommand
+  /** Sets a value through the agent's own picker without leaving the chat, where the host can drive it. */
+  pickAgentOption?: NativeChatPickAgentOption
   onAgentPicker?: () => void
   /** Share persistence with typed commands so null-model and launch-adoption checks apply everywhere. */
   persist: (modelId: string | null, optionId: string, value: SessionOptionValue) => void
@@ -182,7 +185,8 @@ async function applySetOption(
     throw new SessionOptionApplyError('unknownOption', id)
   }
   const { apply, modelId: previousModelId } = resolved
-  if (ctx.mode === 'live' && apply.midSession?.kind === 'agent-picker') {
+  const drivesPicker = ctx.mode === 'live' && apply.midSession?.kind === 'agent-picker'
+  if (drivesPicker && (!ctx.pickAgentOption || typeof value !== 'string')) {
     throw new SessionOptionApplyError('agentPickerOnly')
   }
 
@@ -209,7 +213,9 @@ async function applySetOption(
       : undefined
 
   let dispatchResult: NativeChatSessionOptionDispatchResult | void = undefined
-  if (ctx.mode === 'live') {
+  if (drivesPicker && ctx.pickAgentOption) {
+    await ctx.pickAgentOption({ optionId: id, value: String(value) })
+  } else if (ctx.mode === 'live') {
     dispatchResult = await dispatchLiveCommand(ctx, {
       optionId: id,
       value,

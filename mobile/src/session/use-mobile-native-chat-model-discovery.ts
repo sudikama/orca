@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
-import { getAgentSessionOptionCatalog } from '../../../src/shared/agent-session/options/agent-session-option-catalog'
+import { getNativeChatSessionOptionCatalog } from '../../../src/shared/agent-session/options/agent-session-option-catalog'
 import type { CatalogModel } from '../../../src/shared/agent-session/options/agent-session-option-catalog-types'
 import {
   catalogModelsFromModelDiscovery,
@@ -60,7 +60,7 @@ export function useMobileNativeChatModelDiscovery(args: {
     models: CatalogModel[]
   } | null>(null)
   useEffect(() => {
-    const catalog = agent ? getAgentSessionOptionCatalog(agent) : null
+    const catalog = agent ? getNativeChatSessionOptionCatalog(agent) : null
     if (!enabled || !client || !worktreeId || !agent || !catalog) {
       return
     }

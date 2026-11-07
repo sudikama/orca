@@ -6,6 +6,7 @@ import type { MobileNativeChatTab } from './mobile-native-chat-eligibility'
 import type { StructuredAgentSessionHostSupport } from '../mobile-structured-agent-session-host-support'
 import { useMobileNativeChatDrafts } from './composer/use-mobile-native-chat-drafts'
 import { useMobileNativeChatWorkspaceCatalog } from './composer/use-mobile-native-chat-workspace-catalog'
+import { useMobileNativeChatAgentPick } from './transcript/use-mobile-native-chat-agent-pick'
 import { useMobileNativeChatMessageSend } from './transcript/use-mobile-native-chat-message-send'
 import { useMobileNativeChatSessionOptionController } from './input/use-mobile-native-chat-session-option-controller'
 import { useMobileNativeChatSessionLane } from './use-mobile-native-chat-session-lane'
@@ -203,6 +204,14 @@ export function useMobileNativeChatController(args: {
     onSendError
   })
 
+  const handleNativeChatPickAgentOption = useMobileNativeChatAgentPick({
+    client,
+    enabled: inputSendable && !activeChatStructured,
+    handleRef: activeHandleRef,
+    deviceTokenRef,
+    onSendError
+  })
+
   const structuredNativeChatSend = useMobileStructuredNativeChatSendBridge({
     agent: activeChatResolution?.agent,
     sessionCommands: nativeChatLane.sessionCommands.commands,
@@ -220,6 +229,7 @@ export function useMobileNativeChatController(args: {
       activeSessionTabId,
       agent: activeChatResolution?.agent ?? null,
       dispatchCommand: handleNativeChatDispatchCommand,
+      pickAgentOption: handleNativeChatPickAgentOption,
       hostId,
       isTabChatView,
       isWorking: nativeChatAgentWorking,

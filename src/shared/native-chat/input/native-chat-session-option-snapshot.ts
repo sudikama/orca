@@ -60,13 +60,15 @@ function actionForApply(
   apply: { midSession?: CatalogMidSessionApply },
   tracked: TrackedNativeChatSessionOption | undefined,
   mode: NativeChatSessionOptionMode,
-  liveTransport: NativeChatLiveOptionTransport
+  liveTransport: NativeChatLiveOptionTransport,
+  directPick: boolean
 ): SessionOptionDescriptor['action'] {
   if (mode !== 'live' || liveTransport === 'agent-session') {
     return undefined
   }
   if (apply.midSession?.kind === 'agent-picker') {
-    return { type: 'agent-picker' }
+    // A host that drives the picker lets the row choose a value like any other select.
+    return directPick ? undefined : { type: 'agent-picker' }
   }
   // Unknown flip-only options need actions; tracked baselines permit absolute On/Off controls.
   return isFlipOnlyMidSession(apply.midSession) && !tracked ? { type: 'toggle-command' } : undefined
@@ -79,9 +81,10 @@ function optionDescriptor(args: {
   liveTransport: NativeChatLiveOptionTransport
   modelIsCliDefault: boolean
   composedModelApply: AgentSessionOptionCatalog['modelApply']
+  directPick: boolean
 }): SessionOptionDescriptor | null {
   const { option, tracked, mode, liveTransport, modelIsCliDefault, composedModelApply } = args
-  const action = actionForApply(option.apply, tracked, mode, liveTransport)
+  const action = actionForApply(option.apply, tracked, mode, liveTransport, args.directPick)
   const settable = settableState({ mode, liveTransport, apply: option.apply, composedModelApply })
   // Draft options emit flags only with a chosen model; CLI-default values are nameable only when its listing proves them.
   const cliStatesDefault =
@@ -220,6 +223,8 @@ export function nativeChatSessionOptionDescriptors(args: {
   controls: readonly CatalogOption[]
   values: Readonly<Record<string, TrackedNativeChatSessionOption | undefined>>
   modelIsCliDefault: boolean
+  /** The host drives the agent's picker, so picker-backed rows are ordinary selects. */
+  directPick?: boolean
 }): SessionOptionDescriptor[] {
   const { catalog, models, mode, modelLabel, liveTransport, model } = args
   // Callers reconcile tracked models into choices first; the trigger must never show an unlisted selection.
@@ -232,7 +237,13 @@ export function nativeChatSessionOptionDescriptors(args: {
       ? { searchOnly: true as const }
       : {})
   }))
-  const modelAction = actionForApply(catalog.modelApply, model.tracked, mode, liveTransport)
+  const modelAction = actionForApply(
+    catalog.modelApply,
+    model.tracked,
+    mode,
+    liveTransport,
+    args.directPick === true
+  )
   const snapshot: SessionOptionDescriptor[] = [
     {
       id: 'model',
@@ -256,7 +267,8 @@ export function nativeChatSessionOptionDescriptors(args: {
       mode,
       liveTransport,
       modelIsCliDefault: args.modelIsCliDefault,
-      composedModelApply: catalog.modelApply
+      composedModelApply: catalog.modelApply,
+      directPick: args.directPick === true
     })
     if (descriptor) {
       snapshot.push(descriptor)
@@ -274,6 +286,7 @@ export function buildNativeChatSessionOptionSnapshot(args: {
   modelLabel: string
   /** Require producers to name their lane; defaulting could silently inherit the other transport’s rendering. */
   liveTransport: NativeChatLiveOptionTransport
+  directPick?: boolean
 }): SessionOptionDescriptor[] {
   const { catalog, models, record } = args
   if (models.length === 0) {

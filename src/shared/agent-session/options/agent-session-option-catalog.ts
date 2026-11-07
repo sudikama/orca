@@ -1,4 +1,7 @@
-import { OPENCODE_LAUNCH_OPTION_CATALOG } from './agent-session-option-catalog-opencode'
+import {
+  OPENCODE_CHAT_OPTION_CATALOG,
+  OPENCODE_LAUNCH_OPTION_CATALOG
+} from './agent-session-option-catalog-opencode'
 import { CODEBUDDY_SESSION_OPTION_CATALOG } from './agent-session-option-catalog-codebuddy'
 import type { AgentType } from '../../agent-status/contracts/agent-status-types'
 import { ANTIGRAVITY_SESSION_OPTION_CATALOG } from './agent-session-option-catalog-antigravity'
@@ -71,14 +74,16 @@ export function mergeCatalogModels(
 /** Discovery controls membership; retain seed option menus. Unseeded models inherit default-seed global CLI flags so their picker stays available. */
 export function mergeDiscoveredAuthoritativeModels(
   seed: readonly CatalogModel[],
-  discovered: readonly CatalogModel[]
+  discovered: readonly CatalogModel[],
+  fallbackOptions: readonly CatalogOption[] = []
 ): CatalogModel[] {
-  const inheritedOptions = (seed.find((model) => model.isDefault) ?? seed[0])?.options ?? []
+  const seededOptions = (seed.find((model) => model.isDefault) ?? seed[0])?.options
+  const inheritedOptions = seededOptions?.length ? seededOptions : [...fallbackOptions]
   return discovered.map((disc) => {
     const seedMatch = seed.find((model) => model.id === disc.id)
     const { isDefault: _seeded, ...merged } = seedMatch
       ? { ...seedMatch, ...disc, options: seedMatch.options }
-      : { ...disc, options: inheritedOptions }
+      : { ...disc, options: disc.options.length > 0 ? disc.options : inheritedOptions }
     // Use the probe's current CLI default; a release-frozen seed mislabels changed account defaults.
     return disc.isDefault ? { ...merged, isDefault: true } : merged
   })
@@ -86,6 +91,15 @@ export function mergeDiscoveredAuthoritativeModels(
 
 export function sessionOptionValueIsValid(value: unknown): value is SessionOptionValue {
   return typeof value === 'string' || typeof value === 'boolean'
+}
+
+/** The picker catalog for a terminal-backed chat. OpenCode keeps a launch-only catalog elsewhere, so its chat picker lives here. */
+export function getNativeChatSessionOptionCatalog(
+  agent: AgentType | string
+): AgentSessionOptionCatalog | null {
+  return agent === 'opencode' || agent === 'opencode2'
+    ? OPENCODE_CHAT_OPTION_CATALOG
+    : getAgentSessionOptionCatalog(agent as AgentType)
 }
 
 export function getAgentSessionOptionLaunchCatalog(

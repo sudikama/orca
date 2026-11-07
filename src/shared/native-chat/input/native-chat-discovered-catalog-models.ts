@@ -1,6 +1,10 @@
-import { createClaudeCatalogOptions } from '../../agent-session/options/agent-session-option-catalog-claude-codex'
 import {
-  getAgentSessionOptionCatalog,
+  createClaudeCatalogOptions,
+  createCodexCatalogOptions
+} from '../../agent-session/options/agent-session-option-catalog-claude-codex'
+import { groupAntigravityModels } from '../../agent-session/options/agent-session-option-catalog-antigravity'
+import {
+  getNativeChatSessionOptionCatalog,
   mergeCatalogModels,
   mergeDiscoveredAuthoritativeModels
 } from '../../agent-session/options/agent-session-option-catalog'
@@ -30,12 +34,23 @@ export function catalogModelsFromModelDiscovery(
     result.models.length === 0 ||
     // Static fallback lists cannot stand in for the host's authoritative inventory.
     ((agent === 'claude' ||
-      getAgentSessionOptionCatalog(agent)?.discoveredModelsAreAuthoritative) &&
+      getNativeChatSessionOptionCatalog(agent)?.discoveredModelsAreAuthoritative) &&
       result.catalogOrigin !== 'probe')
   ) {
     return null
   }
-  return result.models.map((model) => ({
+  if (agent === 'antigravity') {
+    return groupAntigravityModels(result.models.map(({ id, label }) => ({ id, label })))
+  }
+  // Discovery prepends a "Config default" sentinel for OpenCode; it is not a model `/models` can pick.
+  const listed =
+    agent === 'opencode' || agent === 'opencode2'
+      ? result.models.filter((model) => model.id !== 'default')
+      : result.models
+  if (listed.length === 0) {
+    return null
+  }
+  return listed.map((model) => ({
     id: model.id,
     label: model.label,
     ...(model.description ? { description: model.description } : {}),
@@ -48,7 +63,11 @@ export function catalogModelsFromModelDiscovery(
             effortLevelIds: model.thinkingLevels?.map(({ id }) => id) ?? [],
             supportsFastMode: model.supportsFastMode
           })
-        : []
+        : agent === 'codex'
+          ? createCodexCatalogOptions({
+              effortLevelIds: model.thinkingLevels?.map(({ id }) => id) ?? []
+            })
+          : []
   }))
 }
 
@@ -62,6 +81,6 @@ export function mergeDiscoveredCatalogModels(
     return [...discovered]
   }
   return catalog.discoveredModelsAreAuthoritative
-    ? mergeDiscoveredAuthoritativeModels(catalog.models, discovered)
+    ? mergeDiscoveredAuthoritativeModels(catalog.models, discovered, catalog.unknownModelOptions)
     : mergeCatalogModels(catalog.models, discovered)
 }

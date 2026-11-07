@@ -168,14 +168,20 @@ const CODEX_EFFORT_CHOICES = [
 // Why: Codex can clamp higher values, so expose only each model's advertised levels.
 function codexEffort(ceiling: 'xhigh' | 'max' | 'ultra'): CatalogOption {
   const ceilingIndex = CODEX_EFFORT_CHOICES.findIndex((choice) => choice.value === ceiling)
+  return codexEffortWithChoices(CODEX_EFFORT_CHOICES.slice(0, ceilingIndex + 1))
+}
+
+function codexEffortWithChoices(choices: typeof CODEX_EFFORT_CHOICES): CatalogOption {
   return {
     id: 'effort',
     label: 'Reasoning effort',
     category: 'thought_level',
     kind: {
       type: 'select',
-      choices: CODEX_EFFORT_CHOICES.slice(0, ceilingIndex + 1),
-      defaultValue: 'medium'
+      choices,
+      defaultValue: choices.some((choice) => choice.value === 'medium')
+        ? 'medium'
+        : (choices[0]?.value ?? 'medium')
     },
     apply: {
       ...agentChoiceCliApply(
@@ -194,6 +200,16 @@ function codexEffort(ceiling: 'xhigh' | 'max' | 'ultra'): CatalogOption {
       midSession: { kind: 'agent-picker', command: '/model', delivery: 'type' }
     }
   }
+}
+
+/** Effort control from the levels the host's Codex listing states for a model. */
+export function createCodexCatalogOptions(args: {
+  effortLevelIds: readonly string[]
+}): CatalogOption[] {
+  const choices = CODEX_EFFORT_CHOICES.filter((choice) =>
+    args.effortLevelIds.includes(choice.value)
+  )
+  return choices.length >= 2 ? [codexEffortWithChoices(choices)] : []
 }
 
 const CODEX_SERVICE_TIER: CatalogOption = {

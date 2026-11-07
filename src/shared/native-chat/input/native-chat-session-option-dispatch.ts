@@ -20,3 +20,9 @@ export type NativeChatSessionOptionDispatchCommand = (
   | Promise<NativeChatSessionOptionDispatchResult | void>
   | NativeChatSessionOptionDispatchResult
   | void
+
+/** Sets one value by driving the agent's own picker dialog; rejects when the dialog cannot be driven. */
+export type NativeChatPickAgentOption = (request: {
+  optionId: string
+  value: string
+}) => Promise<void>

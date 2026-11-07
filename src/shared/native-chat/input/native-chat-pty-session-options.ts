@@ -1,4 +1,4 @@
-import { getAgentSessionOptionCatalog } from '../../agent-session/options/agent-session-option-catalog'
+import { getNativeChatSessionOptionCatalog } from '../../agent-session/options/agent-session-option-catalog'
 import type { CatalogModel } from '../../agent-session/options/agent-session-option-catalog-types'
 import type { AgentType } from '../../agent-status/contracts/agent-status-types'
 import type {
@@ -24,7 +24,10 @@ import {
   withTrackedNativeChatModel,
   type NativeChatSessionOptionMode
 } from './native-chat-session-option-snapshot'
-import type { NativeChatSessionOptionDispatchCommand } from './native-chat-session-option-dispatch'
+import type {
+  NativeChatPickAgentOption,
+  NativeChatSessionOptionDispatchCommand
+} from './native-chat-session-option-dispatch'
 
 type PersistSelection = (args: {
   modelId: string
@@ -53,6 +56,8 @@ export type CreateNativeChatPtySessionOptionsArgs = {
   canSwitchOmpModel?: boolean
   reportedValues?: Record<string, SessionOptionValue> | null
   dispatchCommand: NativeChatSessionOptionDispatchCommand
+  /** Present when the host can drive the agent's own picker, so model and effort need no terminal view. */
+  pickAgentOption?: NativeChatPickAgentOption
   onAgentPicker?: () => void
   persistSelection?: PersistSelection
   onDraftValuesChanged?: (values: Record<string, SessionOptionValue>) => void
@@ -61,7 +66,7 @@ export type CreateNativeChatPtySessionOptionsArgs = {
 export function createNativeChatPtySessionOptions(
   args: CreateNativeChatPtySessionOptionsArgs
 ): NativeChatPtySessionOptionsSurface | null {
-  const baseCatalog = getAgentSessionOptionCatalog(args.agent)
+  const baseCatalog = getNativeChatSessionOptionCatalog(args.agent)
   if (!baseCatalog) {
     return null
   }
@@ -89,7 +94,8 @@ export function createNativeChatPtySessionOptions(
     record,
     mode: args.mode,
     modelLabel: args.modelLabel,
-    liveTransport: 'catalog'
+    liveTransport: 'catalog',
+    directPick: args.pickAgentOption !== undefined
   })
   const listeners = new Set<(value: SessionOptionDescriptor[]) => void>()
 
@@ -101,7 +107,8 @@ export function createNativeChatPtySessionOptions(
       record,
       mode: args.mode,
       modelLabel: args.modelLabel,
-      liveTransport: 'catalog'
+      liveTransport: 'catalog',
+      directPick: args.pickAgentOption !== undefined
     })
     for (const listener of listeners) {
       listener(snapshot)
@@ -156,6 +163,7 @@ export function createNativeChatPtySessionOptions(
     getModels: activeModels,
     getRecord: () => record,
     dispatchCommand: args.dispatchCommand,
+    pickAgentOption: args.pickAgentOption,
     onAgentPicker: args.onAgentPicker,
     persist,
     onDraftValuesChanged: args.onDraftValuesChanged,
