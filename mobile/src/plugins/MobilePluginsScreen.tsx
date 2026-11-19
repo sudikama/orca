@@ -16,6 +16,7 @@ import { useHostClient } from '../transport/connection/host-client-hooks'
 import { styles } from './mobile-plugins-styles'
 import { PluginApprovalSheet } from './PluginApprovalSheet'
 import { PluginDetailSheet } from './PluginDetailSheet'
+import { PluginPanelSheet, type OpenPluginPanel } from './PluginPanelSheet'
 import { isPluginEnabled, type PluginListEntry } from './plugin-rpc-schemas'
 import { useHostPlugins } from './use-host-plugins'
 
@@ -54,6 +55,7 @@ export function MobilePluginsScreen() {
   const connected = connState === 'connected'
   const host = useHostPlugins(client, connected)
   const [detailKey, setDetailKey] = useState<string | null>(null)
+  const [openPanel, setOpenPanel] = useState<OpenPluginPanel | null>(null)
 
   const installed = host.plugins ?? []
   const installedKeys = new Set(installed.map((plugin) => plugin.pluginKey))
@@ -158,8 +160,15 @@ export function MobilePluginsScreen() {
         plugin={detail}
         host={host}
         connected={connected}
+        onOpenPanel={(panel) => {
+          if (detail) {
+            setOpenPanel({ pluginKey: detail.pluginKey, panelId: panel.id, title: panel.title })
+            setDetailKey(null)
+          }
+        }}
         onClose={() => setDetailKey(null)}
       />
+      <PluginPanelSheet client={client} panel={openPanel} onClose={() => setOpenPanel(null)} />
       <PluginApprovalSheet
         request={host.approval}
         onApprove={() => void host.approve()}

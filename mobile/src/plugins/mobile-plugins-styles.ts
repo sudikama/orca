@@ -47,5 +47,6 @@ export const styles = themedStyleSheet(() => ({
     borderRadius: radii.surface,
     backgroundColor: colors.bgRaised
   },
-  logLine: { fontSize: 12, color: colors.textSecondary, fontFamily: 'monospace' }
+  logLine: { fontSize: 12, color: colors.textSecondary, fontFamily: 'monospace' },
+  panelBody: { flex: 1, minHeight: 420 }
 }))

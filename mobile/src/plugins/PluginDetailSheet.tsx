@@ -16,6 +16,7 @@ export function PluginDetailSheet(props: {
   plugin: PluginListEntry | null
   host: HostPlugins
   connected: boolean
+  onOpenPanel: (panel: { id: string; title: string }) => void
   onClose: () => void
 }) {
   useMobileColorScheme()
@@ -98,8 +99,9 @@ export function PluginDetailSheet(props: {
                   <ListRow
                     key={panel.id}
                     title={panel.title}
-                    subtitle={t('plugins.detail.panelDesktop', 'Open it in the desktop app.')}
-                    disabled
+                    navigates
+                    disabled={!props.connected || !isPluginEnabled(plugin)}
+                    onPress={() => props.onOpenPanel(panel)}
                   />
                 ))}
               </ListGroup>

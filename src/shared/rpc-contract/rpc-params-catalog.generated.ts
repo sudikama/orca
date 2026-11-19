@@ -1484,6 +1484,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'plugins.marketplaceList': null,
   'plugins.open': PluginOpenParams,
   'plugins.panelAction': PluginsPanelActionParams,
+  'plugins.panelHello': null,
   'plugins.readPanelEntry': PluginReadPanelEntryParams,
   'plugins.refresh': null,
   'plugins.restart': PluginRestartParams,

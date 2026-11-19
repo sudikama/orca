@@ -11,6 +11,12 @@ import {
   PLUGIN_NOT_FOUND_CODE,
   PluginCliError
 } from '../../../../../shared/plugins/approval/plugin-cli-approval'
+import { PLUGIN_PROTOCOL_VERSION } from '../../../../../shared/plugins/frames/plugin-protocol'
+import {
+  pluginFrameMethodsFor,
+  pluginHostApiMinorFor
+} from '../../../../../shared/plugins/workers/plugin-host-api'
+import { PLUGIN_HOST_API_MAJOR } from '../../../../../shared/plugins/workers/plugin-host-api-major'
 import type { Store } from '../../../../persistence/loading-store/store'
 import type { PluginConsentRequest } from '../../../../../shared/plugins/approval/plugin-consent-request'
 import type { PluginHostListEntry } from '../../../../../shared/plugins/plugin-list-entry'
@@ -174,6 +180,21 @@ export const PLUGIN_INSTALL_METHODS = [
           official: listing.official,
           blocked: listing.blockedByKillList !== undefined
         }))
+      }
+    }
+  }),
+  defineMethod({
+    // Fork: what a phone's panel frame is offered, computed here so the phone carries no API tables.
+    name: 'plugins.panelHello',
+    permission: 'workspace',
+    params: null,
+    handler: async () => {
+      const methods = pluginFrameMethodsFor('panel', false)
+      return {
+        protocol: PLUGIN_PROTOCOL_VERSION,
+        surface: 'panel' as const,
+        api: { major: PLUGIN_HOST_API_MAJOR, minor: pluginHostApiMinorFor(methods) },
+        methods
       }
     }
   }),

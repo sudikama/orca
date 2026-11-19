@@ -5196,7 +5196,6 @@
       "workspaceCommand": "Workspace command",
       "commandRan": "{{command}} ran.",
       "panels": "Panels",
-      "panelDesktop": "Open it in the desktop app.",
       "restart": "Restart",
       "update": "Update",
       "logs": "Logs",
@@ -5204,6 +5203,12 @@
       "noLogs": "No log lines yet.",
       "uninstallTitle": "Uninstall {{name}}?",
       "uninstallMessage": "Its files and data are removed from this host."
+    },
+    "panel": {
+      "pageOnly": "Open the Plugins screen from the host to use its panels.",
+      "unreadable": "The host could not open this panel.",
+      "needsUpdate": "Update the Orca app to open plugin panels here.",
+      "components": "This panel only opens in the desktop app."
     }
   }
 }

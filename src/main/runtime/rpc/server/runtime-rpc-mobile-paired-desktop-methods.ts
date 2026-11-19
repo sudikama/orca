@@ -126,6 +126,7 @@ export const PAIRED_DESKTOP_METHODS = [
   'plugins.list',
   'plugins.marketplaceList',
   'plugins.panelAction',
+  'plugins.panelHello',
   'plugins.readPanelEntry',
   'plugins.refresh',
   'plugins.restart',
