@@ -1,10 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { guardedSafeStorage as safeStorage } from '../../host/safe-storage-availability'
-import {
-  assessSecretProtection,
-  type SecretProtectionAssessment
-} from '../../host/electron-secret-store'
+import { getSecretStore } from '../../../shared/secure-storage/secret-store'
+import { describeOrcadHostKeyGap } from '../../orcad/credentials/orcad-secret-protection-gap'
 import { isUnreadableError, writeSecureFile } from '../../../shared/secure-storage/secure-file'
 import {
   PLUGIN_STORAGE_KEY_LIMIT,
@@ -24,9 +21,27 @@ export type PluginSecretsResult<T> = { ok: true; value: T } | { ok: false; error
 
 const UNREADABLE_VAULT_ERROR = 'secret vault exists but could not be read; refusing to overwrite it'
 
-/** At-rest protection plugin secrets get; backs the `secrets.protection` host method. */
-export function pluginSecretsProtection(): SecretProtectionAssessment {
-  return assessSecretProtection()
+export type PluginSecretsProtectionLevel = 'os' | 'obfuscated' | 'unavailable'
+
+// Fork: a headless orcad seals with a host key kept beside its private data, as for agent
+// accounts; that is not a built-in key, so plugins may store secrets there.
+const ACCEPTED_GAPS: ReadonlySet<string> = new Set([
+  describeOrcadHostKeyGap(true),
+  describeOrcadHostKeyGap(false)
+])
+
+/**
+ * At-rest protection plugin secrets get; backs the `secrets.protection` host method. Read from
+ * the installed SecretStore: on desktop that is ElectronSecretStore, whose gap is non-null
+ * exactly when Linux basic_text obfuscates with a built-in key.
+ */
+export function pluginSecretsProtection(): { level: PluginSecretsProtectionLevel } {
+  const secrets = getSecretStore()
+  if (!secrets.isEncryptionAvailable()) {
+    return { level: 'unavailable' }
+  }
+  const gap = secrets.describeProtectionGap()
+  return { level: gap === null || ACCEPTED_GAPS.has(gap) ? 'os' : 'obfuscated' }
 }
 
 export class PluginSecretsStore {
@@ -80,18 +95,18 @@ export class PluginSecretsStore {
     if (typeof ciphertext !== 'string') {
       return { ok: true, value: null }
     }
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!getSecretStore().isEncryptionAvailable()) {
       return { ok: false, error: 'OS-backed encryption is unavailable' }
     }
     try {
-      return { ok: true, value: safeStorage.decryptString(Buffer.from(ciphertext, 'base64')) }
+      return { ok: true, value: getSecretStore().decryptString(Buffer.from(ciphertext, 'base64')) }
     } catch {
       return { ok: false, error: 'failed to decrypt stored secret' }
     }
   }
 
   set(key: string, value: string): PluginSecretsResult<true> {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!getSecretStore().isEncryptionAvailable()) {
       return { ok: false, error: 'OS-backed encryption is unavailable; secret not stored' }
     }
     // Why: Linux basic_text seals with a built-in key, which is plaintext to anyone reading the file.
@@ -112,7 +127,7 @@ export class PluginSecretsStore {
     ) {
       return { ok: false, error: `secret vault exceeds the ${PLUGIN_STORAGE_KEY_LIMIT}-key limit` }
     }
-    file.ciphertexts[key] = safeStorage.encryptString(value).toString('base64')
+    file.ciphertexts[key] = getSecretStore().encryptString(value).toString('base64')
     const nextFile = JSON.stringify(file, null, 2)
     if (Buffer.byteLength(nextFile, 'utf8') > PLUGIN_STORAGE_TOTAL_MAX_BYTES) {
       return { ok: false, error: `secret vault exceeds ${PLUGIN_STORAGE_TOTAL_MAX_BYTES} bytes` }

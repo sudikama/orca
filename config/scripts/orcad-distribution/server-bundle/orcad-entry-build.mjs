@@ -37,6 +37,7 @@ export const ORCAD_CHILD_ENTRY_POINTS = {
   claudeProfileSetup:
     'src/main/claude-accounts/profiles/setup/claude-profile-setup-worker-entry.ts',
   claudeConversationFork: 'src/main/claude/transcripts/claude-conversation-fork-worker-entry.ts',
+  pluginHost: 'src/main/plugins/workers/plugin-host-entry.ts',
   sttWorker: 'src/main/speech/stt-worker.ts',
   computerSidecar: 'src/main/computer/computer-sidecar.ts'
 }

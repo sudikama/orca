@@ -117,6 +117,21 @@ export const PAIRED_DESKTOP_METHODS = [
   'settings.updateTerminalQuickCommands',
   'terminal.getAutoRestoreFit',
   'terminal.setAutoRestoreFit',
+  // Plugins run on the paired host (orcad on a headless server); phones manage and use them.
+  'plugins.catalogList',
+  'plugins.consent',
+  'plugins.getLogs',
+  'plugins.install',
+  'plugins.invokeCommand',
+  'plugins.list',
+  'plugins.panelAction',
+  'plugins.readPanelEntry',
+  'plugins.refresh',
+  'plugins.restart',
+  'plugins.setEnabled',
+  'plugins.setSystemEnabled',
+  'plugins.uninstall',
+  'plugins.update',
   // Per-section collapse, sidebar feed and icons exist only with ORCA_SIDEBAR_INPUTS=main.
   ...(ORCA_SIDEBAR_INPUTS_IS_MAIN
     ? (['ui.setCollapsed', 'sidebarInputs.read', 'sidebarInputs.repoIcons'] as const)

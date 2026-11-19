@@ -26,6 +26,11 @@ vi.mock('electron', () => ({
 }))
 
 import { PluginSecretsStore } from './plugin-secrets-store'
+import { ElectronSecretStore } from '../../host/electron-secret-store'
+import {
+  _resetSecretStoreForTests,
+  setSecretStore
+} from '../../../shared/secure-storage/secret-store'
 
 const roots: string[] = []
 const originalPlatform = process.platform
@@ -37,6 +42,7 @@ async function tempRoot(): Promise<string> {
 }
 
 beforeEach(() => {
+  setSecretStore(new ElectronSecretStore())
   storageMocks.available = true
   storageMocks.backend = 'gnome_libsecret'
   storageMocks.encryptString.mockImplementation((value) =>
@@ -52,6 +58,7 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
+  _resetSecretStoreForTests()
   Object.defineProperty(process, 'platform', { value: originalPlatform })
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
 })

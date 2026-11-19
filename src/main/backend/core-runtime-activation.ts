@@ -298,6 +298,17 @@ export async function activateBackendRuntime(
   await timed('rpc', () => rpc.start())
   worktreeRemovalLifetime.resume(() => runtime.finishInterruptedWorktreeRemovals())
   startOrcadSchedulers(runtime, profileStore, registerCleanup)
+  void import('../orcad/host-runtime/orcad-plugins')
+    .then(({ startOrcadPlugins }) =>
+      startOrcadPlugins({
+        runtime,
+        store: profileStore,
+        userDataPath: runtimeUserDataPath,
+        agentHookServer,
+        registerCleanup
+      })
+    )
+    .catch((error: unknown) => console.warn('[orcad-plugins] failed to start:', error))
   startOrcadDesktopPushService(runtime, rpc)
   console.error(`[orcad] ${describeOrcadBindExposure(bindHost)}`)
 
