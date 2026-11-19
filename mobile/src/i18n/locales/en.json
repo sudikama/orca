@@ -5203,7 +5203,10 @@
       "uninstall": "Uninstall",
       "noLogs": "No log lines yet.",
       "uninstallTitle": "Uninstall {{name}}?",
-      "uninstallMessage": "Its files and data are removed from this host."
+      "uninstallMessage": "Its files and data are removed from this host.",
+      "official": "Official",
+      "source": "Source",
+      "installing": "Installing…"
     },
     "panel": {
       "pageOnly": "Open the Plugins screen from the host to use its panels.",
@@ -5215,6 +5218,19 @@
       "manage": "Manage plugins",
       "title": "Plugins",
       "none": "No enabled plugin has a panel yet."
+    },
+    "kind": {
+      "all": "All",
+      "themes": "Themes",
+      "languages": "Languages",
+      "translations": "Translations",
+      "icons": "Icons",
+      "editors": "Editors",
+      "commands": "Commands & panels",
+      "machines": "Remote/VMs",
+      "games": "Games",
+      "agents": "Agents",
+      "integrations": "Integrations"
     }
   }
 }

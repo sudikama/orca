@@ -16,6 +16,9 @@ import { useHostClient } from '../transport/connection/host-client-hooks'
 import { styles } from './mobile-plugins-styles'
 import { PluginApprovalSheet } from './PluginApprovalSheet'
 import { PluginDetailSheet } from './PluginDetailSheet'
+import { MarketplaceDetailSheet } from './MarketplaceDetailSheet'
+import { PluginCategoryChips } from './PluginCategoryChips'
+import { pluginKindCounts, pluginKinds } from './plugin-categories'
 import { PluginPanelSheet, type OpenPluginPanel } from './PluginPanelSheet'
 import { isPluginEnabled, type PluginListEntry } from './plugin-rpc-schemas'
 import { useHostPlugins } from './use-host-plugins'
@@ -56,11 +59,23 @@ export function MobilePluginsScreen() {
   const host = useHostPlugins(client, connected)
   const [detailKey, setDetailKey] = useState<string | null>(null)
   const [openPanel, setOpenPanel] = useState<OpenPluginPanel | null>(null)
+  const [marketKey, setMarketKey] = useState<string | null>(null)
+  const [kind, setKind] = useState<string | null>(null)
 
-  const installed = host.plugins ?? []
-  const installedKeys = new Set(installed.map((plugin) => plugin.pluginKey))
-  const available = host.listings.filter((listing) => !installedKeys.has(listing.pluginKey))
-  const detail = installed.find((plugin) => plugin.pluginKey === detailKey) ?? null
+  const allInstalled = host.plugins ?? []
+  const installedKeys = new Set(allInstalled.map((plugin) => plugin.pluginKey))
+  const allAvailable = host.listings.filter((listing) => !installedKeys.has(listing.pluginKey))
+  // Fork: kinds as on desktop; an installed plugin takes its listing's categories, else its types.
+  const categoriesByKey = new Map(host.listings.map((l) => [l.pluginKey, l.categories]))
+  const installedKinds = allInstalled.map((p) =>
+    pluginKinds(categoriesByKey.get(p.pluginKey) ?? [], p.types)
+  )
+  const availableKinds = allAvailable.map((listing) => pluginKinds(listing.categories))
+  const kindCounts = pluginKindCounts([...installedKinds, ...availableKinds])
+  const installed = allInstalled.filter((_, i) => kind === null || installedKinds[i].includes(kind))
+  const available = allAvailable.filter((_, i) => kind === null || availableKinds[i].includes(kind))
+  const detail = allInstalled.find((plugin) => plugin.pluginKey === detailKey) ?? null
+  const market = allAvailable.find((listing) => listing.pluginKey === marketKey) ?? null
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -107,6 +122,7 @@ export function MobilePluginsScreen() {
         </ListGroup>
         {host.systemEnabled ? (
           <>
+            <PluginCategoryChips kinds={kindCounts} selected={kind} onSelect={setKind} />
             <SectionHeader title={t('plugins.screen.installed', 'Installed')} />
             {installed.length === 0 ? (
               <Text style={styles.hint}>
@@ -147,8 +163,8 @@ export function MobilePluginsScreen() {
                       </Text>
                     }
                     busy={host.busyKey === listing.pluginKey}
-                    disabled={!connected || listing.blocked || host.busyKey !== null}
-                    onPress={() => void host.install(listing.pluginKey)}
+                    navigates
+                    onPress={() => setMarketKey(listing.pluginKey)}
                   />
                 ))}
               </ListGroup>
@@ -156,8 +172,20 @@ export function MobilePluginsScreen() {
           </>
         ) : null}
       </ScrollView>
+      <MarketplaceDetailSheet
+        listing={market}
+        client={client}
+        busy={market !== null && host.busyKey === market.pluginKey}
+        installDisabled={!connected || host.busyKey !== null}
+        onInstall={(pluginKey) => {
+          setMarketKey(null)
+          void host.install(pluginKey)
+        }}
+        onClose={() => setMarketKey(null)}
+      />
       <PluginDetailSheet
         plugin={detail}
+        client={client}
         host={host}
         connected={connected}
         onOpenPanel={(panel) => {

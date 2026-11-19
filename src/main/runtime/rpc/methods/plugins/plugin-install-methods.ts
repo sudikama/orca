@@ -4,6 +4,7 @@ import {
   PluginCatalogAddParams,
   PluginCatalogRemoveParams,
   PluginInstallParams,
+  PluginReadImageParams,
   PluginUninstallParams,
   PluginUpdateParams
 } from '../../../../../shared/rpc-contract/plugins/plugins-params'
@@ -22,6 +23,8 @@ import type { PluginConsentRequest } from '../../../../../shared/plugins/approva
 import type { PluginHostListEntry } from '../../../../../shared/plugins/plugin-list-entry'
 import { listPluginsForClients } from '../../../../plugins/discovery/plugin-client-list'
 import type { PluginService } from '../../../../plugins/plugin-service'
+import type { PluginImageCache } from '../../../../plugins/media/plugin-image-cache'
+import { readPluginImageForRpc } from '../../../../plugins/media/plugin-image-rpc-read'
 import type { PluginCliCatalogs } from '../../../../plugins/cli/plugin-cli-catalog-candidates'
 import {
   installPluginFromCli,
@@ -47,6 +50,8 @@ export type PluginInstallRpcServices = {
   applyConsent: (request: PluginConsentRequest) => Promise<void>
   store: Pick<Store, 'getSettings' | 'updateSettings'>
   afterUninstall?: (pluginKey: string) => Promise<void>
+  /** Fork: verified catalog images, for phones that read them over RPC. */
+  imageCache?: PluginImageCache
 }
 
 let installServicesForRpc: PluginInstallRpcServices | null = null
@@ -178,9 +183,28 @@ export const PLUGIN_INSTALL_METHODS = [
           version: listing.version,
           description: listing.description,
           official: listing.official,
-          blocked: listing.blockedByKillList !== undefined
+          blocked: listing.blockedByKillList !== undefined,
+          categories: listing.categories,
+          images: listing.images,
+          license: listing.license,
+          repository: listing.repository,
+          homepage: listing.homepage,
+          updatedAt: listing.updatedAt
         }))
       }
+    }
+  }),
+  defineMethod({
+    // Fork: image bytes for a phone, which cannot load the orca-plugin-image:// scheme.
+    name: 'plugins.readImage',
+    permission: 'workspace',
+    params: PluginReadImageParams,
+    handler: async (params) => {
+      const services = await requireInstallServices()
+      return readPluginImageForRpc(params.url, {
+        cache: services.imageCache ?? null,
+        findValidPlugin: (pluginKey) => services.pluginService.findValidPlugin(pluginKey)
+      })
     }
   }),
   defineMethod({

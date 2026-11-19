@@ -7,6 +7,29 @@ const PluginCommandSchema = z.object({
   context: z.string().catch('global')
 })
 
+const PluginImageSchema = z.object({
+  url: z.string(),
+  alt: z.string().catch(''),
+  width: z.number().optional().catch(undefined),
+  height: z.number().optional().catch(undefined)
+})
+
+export type PluginImage = z.infer<typeof PluginImageSchema>
+
+// Fork: icon, cover and screenshots as orca-plugin-image:// URLs; the phone reads their bytes over RPC.
+const PluginImagesSchema = z
+  .object({
+    icon: PluginImageSchema.optional().catch(undefined),
+    cover: PluginImageSchema.optional().catch(undefined),
+    screenshots: z
+      .array(PluginImageSchema.extend({ caption: z.string().optional().catch(undefined) }))
+      .catch([])
+  })
+  .optional()
+  .catch(undefined)
+
+export type PluginImages = z.infer<typeof PluginImagesSchema>
+
 export const PluginListEntrySchema = z.object({
   pluginKey: z.string(),
   name: z.string(),
@@ -21,7 +44,11 @@ export const PluginListEntrySchema = z.object({
   blockedByKillList: z.object({ reason: z.string() }).optional().catch(undefined),
   commands: z.array(PluginCommandSchema).catch([]),
   panels: z.array(z.object({ id: z.string(), title: z.string() })).catch([]),
-  source: z.object({ kind: z.string() }).optional().catch(undefined)
+  source: z.object({ kind: z.string() }).optional().catch(undefined),
+  types: z.array(z.string()).catch([]),
+  images: PluginImagesSchema,
+  license: z.string().optional().catch(undefined),
+  repository: z.string().optional().catch(undefined)
 })
 
 export type PluginListEntry = z.infer<typeof PluginListEntrySchema>
@@ -34,7 +61,12 @@ const MarketplaceListingSchema = z.object({
   version: z.string().optional().catch(undefined),
   description: z.string().optional().catch(undefined),
   official: z.boolean().catch(false),
-  blocked: z.boolean().catch(false)
+  blocked: z.boolean().catch(false),
+  categories: z.array(z.string()).catch([]),
+  images: PluginImagesSchema,
+  license: z.string().optional().catch(undefined),
+  repository: z.string().optional().catch(undefined),
+  homepage: z.string().optional().catch(undefined)
 })
 
 export type MarketplaceListing = z.infer<typeof MarketplaceListingSchema>

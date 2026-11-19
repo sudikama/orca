@@ -10,10 +10,13 @@ import { styles } from './mobile-plugins-styles'
 import { isPluginEnabled, type PluginListEntry, type PluginLogLine } from './plugin-rpc-schemas'
 import { PluginSheetButton } from './PluginSheetButton'
 import type { HostPlugins } from './use-host-plugins'
+import type { RpcClient } from '../transport/rpc/rpc-client-contract'
+import { PluginGallery } from './PluginGallery'
 
 /** One installed plugin: on/off, its commands and panels, and its maintenance actions. */
 export function PluginDetailSheet(props: {
   plugin: PluginListEntry | null
+  client: RpcClient | null
   host: HostPlugins
   connected: boolean
   onOpenPanel: (panel: { id: string; title: string }) => void
@@ -40,6 +43,7 @@ export function PluginDetailSheet(props: {
           <Text style={styles.sheetMeta}>
             {plugin.publisher ? `${plugin.version} · ${plugin.publisher}` : plugin.version}
           </Text>
+          <PluginGallery client={props.client} images={plugin.images} />
           {plugin.description ? <Text style={styles.sheetText}>{plugin.description}</Text> : null}
           {plugin.blockedByKillList ? (
             <Text style={styles.errorText}>{plugin.blockedByKillList.reason}</Text>

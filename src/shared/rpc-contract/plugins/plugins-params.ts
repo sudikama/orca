@@ -35,6 +35,11 @@ export const PluginReadPanelEntryParams = z.object({
   panelId: z.string().min(1)
 })
 
+// Fork: a phone reads plugin images by their orca-plugin-image:// URL.
+export const PluginReadImageParams = z.object({
+  url: z.string().min(1).max(512)
+})
+
 export const PluginInvokeCommandParams = z.object({
   pluginKey: z.string().min(1),
   commandId: z.string().min(1),

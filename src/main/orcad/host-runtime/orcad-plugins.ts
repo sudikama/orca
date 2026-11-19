@@ -147,7 +147,8 @@ export async function startOrcadPlugins(input: {
     pluginService,
     catalogs: { marketplace, installer },
     applyConsent,
-    store
+    store,
+    imageCache
   })
 
   const forwardAgentStatus = createPluginAgentStatusForwarder(delegate, pluginService)
