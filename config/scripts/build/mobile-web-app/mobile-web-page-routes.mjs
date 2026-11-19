@@ -36,6 +36,12 @@ export const MOBILE_WEB_PAGE_ROUTES = [
     grants: ['navigate', 'storage', 'externalLink', 'haptics'],
     optionalGrants: [DEVICE_STORE_GRANT]
   },
+  // Plugins needs navigate/storage/externalLink for Back and the shared layout, like Accounts.
+  {
+    pathname: '/h/[hostId]/plugins',
+    grants: ['navigate', 'storage', 'externalLink', 'haptics'],
+    optionalGrants: [DEVICE_STORE_GRANT]
+  },
   // Create Workspace overlay needs navigate to close/open session; shared form/layout supply other grants.
   {
     pathname: '/h/[hostId]/new-workspace',

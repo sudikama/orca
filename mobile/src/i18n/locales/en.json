@@ -796,7 +796,8 @@
       "accounts": "Accounts",
       "tasks": "Tasks",
       "moreActions": "More actions",
-      "automations": "Automations"
+      "automations": "Automations",
+      "plugins": "Plugins"
     },
     "hostScreenOverlays": {
       "deleteConfirmMessage": "Delete \"{{name}}\" ({{branch}})?",
@@ -5159,6 +5160,50 @@
     "activity": {
       "needsWindow": "Couldn’t update. Open Orca on {{desktop}}.",
       "failed": "Couldn’t update the agent list."
+    }
+  },
+  "plugins": {
+    "status": {
+      "running": "Running",
+      "idle": "On",
+      "restarting": "Restarting",
+      "pending": "Needs approval",
+      "disabled": "Off",
+      "errored": "Error",
+      "invalid": "Invalid"
+    },
+    "screen": {
+      "title": "Plugins",
+      "refresh": "Refresh plugins",
+      "offline": "Connect to this host to manage its plugins.",
+      "system": "Plugins on this host",
+      "systemHint": "Lets installed plugins run on the host.",
+      "installed": "Installed",
+      "none": "No plugins installed yet.",
+      "marketplace": "Marketplace",
+      "noListings": "Nothing new to install right now.",
+      "blocked": "Blocked",
+      "install": "Install"
+    },
+    "approval": {
+      "title": "Allow {{name}}?",
+      "allow": "Allow"
+    },
+    "detail": {
+      "enabled": "Enabled",
+      "needsApproval": "Asks for new access; turn on to review it.",
+      "commands": "Commands",
+      "workspaceCommand": "Workspace command",
+      "commandRan": "{{command}} ran.",
+      "panels": "Panels",
+      "panelDesktop": "Open it in the desktop app.",
+      "restart": "Restart",
+      "update": "Update",
+      "logs": "Logs",
+      "uninstall": "Uninstall",
+      "noLogs": "No log lines yet.",
+      "uninstallTitle": "Uninstall {{name}}?",
+      "uninstallMessage": "Its files and data are removed from this host."
     }
   }
 }

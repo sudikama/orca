@@ -6,6 +6,7 @@ import {
   List,
   MoreHorizontal,
   PanelLeftClose,
+  Puzzle,
   SquareTerminal,
   UserCircle
 } from 'lucide-react-native'
@@ -125,6 +126,14 @@ export function HostScreenHeader({
       disabled: disconnected,
       closeBeforePress: true,
       onPress: () => actions.navigateFromHostList(`${hostPath}/accounts`)
+    },
+    {
+      id: 'plugins',
+      label: t('hostScreen.hostScreenHeader.plugins', 'Plugins'),
+      icon: Puzzle,
+      disabled: disconnected,
+      closeBeforePress: true,
+      onPress: () => actions.navigateFromHostList(`${hostPath}/plugins`)
     },
     ...(floatingWorkspaceEnabled
       ? [

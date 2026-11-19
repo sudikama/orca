@@ -153,6 +153,31 @@ export const PLUGIN_INSTALL_METHODS = [
     }
   }),
   defineMethod({
+    // Fork: phones browse the marketplace; the desktop reads it over IPC instead.
+    name: 'plugins.marketplaceList',
+    permission: 'host-admin',
+    params: null,
+    handler: async () => {
+      const services = await requireInstallServices()
+      const systemEnabled = services.store.getSettings().pluginSystemEnabled === true
+      if (!systemEnabled) {
+        return { systemEnabled, listings: [] }
+      }
+      const listings = await services.catalogs.marketplace.listPlugins()
+      return {
+        systemEnabled,
+        listings: listings.map((listing) => ({
+          pluginKey: listing.pluginKey,
+          name: listing.name,
+          version: listing.version,
+          description: listing.description,
+          official: listing.official,
+          blocked: listing.blockedByKillList !== undefined
+        }))
+      }
+    }
+  }),
+  defineMethod({
     name: 'plugins.catalogAdd',
     permission: 'host-admin',
     params: PluginCatalogAddParams,

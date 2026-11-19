@@ -1481,6 +1481,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'plugins.install': PluginInstallParams,
   'plugins.invokeCommand': PluginInvokeCommandParams,
   'plugins.list': null,
+  'plugins.marketplaceList': null,
   'plugins.open': PluginOpenParams,
   'plugins.panelAction': PluginsPanelActionParams,
   'plugins.readPanelEntry': PluginReadPanelEntryParams,
