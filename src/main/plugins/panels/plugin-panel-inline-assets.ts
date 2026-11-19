@@ -45,6 +45,16 @@ async function replaceAsync(
   return parts.join('')
 }
 
+// The srcdoc frame has an opaque origin, where touching localStorage throws and kills a panel
+// that never guarded it. Swap in per-open, in-memory storage only when the real one is refused.
+const PANEL_STORAGE_SHIM =
+  '<script>(function(){function m(){var d=new Map();return{get length(){return d.size},' +
+  'key:function(i){return Array.from(d.keys())[i]??null},getItem:function(k){k=String(k);' +
+  'return d.has(k)?d.get(k):null},setItem:function(k,v){d.set(String(k),String(v))},' +
+  'removeItem:function(k){d.delete(String(k))},clear:function(){d.clear()}}}' +
+  "['localStorage','sessionStorage'].forEach(function(n){try{window[n].length}catch(e){" +
+  'try{Object.defineProperty(window,n,{value:m(),configurable:true})}catch(e2){}}})})()</script>\n'
+
 /** Reads a panel entry with its relative scripts and stylesheets inlined. */
 export async function readInlinedPluginPanelEntry(
   rootDir: string,
@@ -52,10 +62,19 @@ export async function readInlinedPluginPanelEntry(
   maxBytes: number
 ): Promise<string> {
   const html = await readContainedPluginArtifactText(rootDir, entryPath, maxBytes)
-  return inlinePluginPanelAssets(rootDir, entryPath, html, maxBytes)
+  return PANEL_STORAGE_SHIM + (await inlinePluginPanelAssets(rootDir, entryPath, html, maxBytes))
 }
 
-/** Inlines the entry's relative scripts and stylesheets, within one shared byte budget. */
+/** Bare specifier prefix the import map resolves; a panel's own module graph lives under it. */
+export const PANEL_MODULE_PREFIX = 'orca-panel-module/'
+const IMPORTMAP_SLOT = '<!--orca-panel-importmap-->'
+const MODULE_TYPE = /\btype\s*=\s*(["'])module\1/i
+// A relative module specifier in quotes or backticks: `import("./chunk.js")`, `from"./app.js"`.
+const RELATIVE_SPECIFIER = /(["'`])(\.{1,2}\/[\w.\-/]+\.m?js)\1/g
+
+/** Inlines the entry's relative scripts and stylesheets, within one shared byte budget. An ES
+ *  module graph (Vite-style chunks importing each other by relative path) becomes data: modules
+ *  behind an import map, so every chunk keeps one instance and dynamic imports still resolve. */
 export async function inlinePluginPanelAssets(
   rootDir: string,
   entryPath: string,
@@ -64,8 +83,7 @@ export async function inlinePluginPanelAssets(
 ): Promise<string> {
   let budget = maxBytes - Buffer.byteLength(html)
   let count = 0
-  const read = async (reference: string): Promise<string | null> => {
-    const path = containedAssetPath(entryPath, reference)
+  const readPath = async (path: string | null): Promise<string | null> => {
     if (path === null || count >= MAX_INLINED_ASSETS || budget <= 0) {
       return null
     }
@@ -78,15 +96,56 @@ export async function inlinePluginPanelAssets(
       return null
     }
   }
+  const read = (reference: string) => readPath(containedAssetPath(entryPath, reference))
+  const modules = new Map<string, string>()
+  // Loads one module and every relative module it names, rewriting those names to bare ones.
+  const loadModule = async (path: string): Promise<boolean> => {
+    if (modules.has(path)) {
+      return true
+    }
+    const source = await readPath(path)
+    if (source === null) {
+      return false
+    }
+    modules.set(path, '')
+    const targets = new Map<string, string | null>()
+    for (const match of source.matchAll(RELATIVE_SPECIFIER)) {
+      const target = containedAssetPath(path, match[2])
+      targets.set(match[2], target !== null && (await loadModule(target)) ? target : null)
+    }
+    const rewritten = source.replace(RELATIVE_SPECIFIER, (whole, quote: string, spec: string) => {
+      const target = targets.get(spec)
+      return target ? `${quote}${PANEL_MODULE_PREFIX}${target}${quote}` : whole
+    })
+    modules.set(path, rewritten)
+    return true
+  }
   const withScripts = await replaceAsync(html, SCRIPT_SRC, async (match, groups) => {
     const [before, , src, after] = groups
-    const text = await read(src)
     const attrs = `${before} ${after}`.trim()
+    if (MODULE_TYPE.test(attrs)) {
+      const path = containedAssetPath(entryPath, src)
+      const slot = modules.size === 0 ? IMPORTMAP_SLOT : ''
+      return path !== null && (await loadModule(path))
+        ? `${slot}<script type="module">import ${JSON.stringify(PANEL_MODULE_PREFIX + path)}</script>`
+        : match
+    }
+    const text = await read(src)
     return text === null
       ? match
       : `<script${attrs ? ` ${attrs}` : ''}>${text.replace(/<\/script/gi, '<\\/script')}</script>`
   })
-  return replaceAsync(withScripts, STYLESHEET_LINK, async (match) => {
+  const imports = Object.fromEntries(
+    [...modules].map(([path, source]) => [
+      PANEL_MODULE_PREFIX + path,
+      `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`
+    ])
+  )
+  const withModules = withScripts.replace(
+    IMPORTMAP_SLOT,
+    modules.size === 0 ? '' : `<script type="importmap">${JSON.stringify({ imports })}</script>`
+  )
+  return replaceAsync(withModules, STYLESHEET_LINK, async (match) => {
     const href = REL_STYLESHEET.test(match) ? HREF.exec(match)?.[2] : undefined
     if (href === undefined) {
       return match
@@ -94,4 +153,12 @@ export async function inlinePluginPanelAssets(
     const text = await read(href)
     return text === null ? match : `<style>${text.replace(/<\/style/gi, '<\\/style')}</style>`
   })
+}
+
+/** The srcdoc shell allows inline scripts only; a panel whose modules were inlined as data:
+ *  modules also needs `data:` scripts. Network stays closed (`connect-src 'none'`). */
+export function withPanelModuleScripts(shellHtml: string): string {
+  return shellHtml.includes(`"${PANEL_MODULE_PREFIX}`)
+    ? shellHtml.replace("script-src 'unsafe-inline';", "script-src 'unsafe-inline' data:;")
+    : shellHtml
 }

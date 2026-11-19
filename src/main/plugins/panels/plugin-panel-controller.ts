@@ -20,7 +20,7 @@ import type { PluginHostCaller } from '../runtime/plugin-service-host-call'
 import { getPluginHostMethodSpec } from '../../../shared/plugins/workers/plugin-host-api'
 import type { PluginContentVerifier } from '../artifacts/plugin-content-integrity'
 import { PLUGIN_PANEL_ENTRY_MAX_BYTES } from '../../../shared/plugins/frames/plugin-frame-entry-limits'
-import { readInlinedPluginPanelEntry } from './plugin-panel-inline-assets'
+import { readInlinedPluginPanelEntry, withPanelModuleScripts } from './plugin-panel-inline-assets'
 import {
   PluginPanelSessions,
   type PluginPanelSessionBinding,
@@ -294,15 +294,17 @@ export class PluginPanelController {
     const log = this.options.log(pluginKey)
     try {
       await this.options.contentVerifier.verify(plugin)
-      const html = buildPluginPanelShellHtml(
-        entryPath === null
-          ? ''
-          : await readInlinedPluginPanelEntry(
-              plugin.rootDir,
-              entryPath,
-              PLUGIN_PANEL_ENTRY_MAX_BYTES
-            ),
-        surface
+      const html = withPanelModuleScripts(
+        buildPluginPanelShellHtml(
+          entryPath === null
+            ? ''
+            : await readInlinedPluginPanelEntry(
+                plugin.rootDir,
+                entryPath,
+                PLUGIN_PANEL_ENTRY_MAX_BYTES
+              ),
+          surface
+        )
       )
       const current = this.options.resolveApprovedPlugin(pluginKey)
       if (current !== plugin || current.rootDir !== plugin.rootDir) {
