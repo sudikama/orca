@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
 import { Bot } from 'lucide-react-native'
 import {
@@ -17,6 +17,8 @@ import {
 import type { MobileSessionPresentationModel } from './use-mobile-session-presentation'
 
 export function useMobileSessionPanelRouteActions(scope: MobileSessionPresentationModel) {
+  // Fork: the session menu's installed-plugin list (SessionPluginPanels).
+  const [showPluginPanels, setShowPluginPanels] = useState(false)
   const t = useMobileTranslation()
   const executionHost = useWorkspaceExecutionHost()
   const {
@@ -199,6 +201,8 @@ export function useMobileSessionPanelRouteActions(scope: MobileSessionPresentati
     handlePanelTap,
     openAgentSessionHistory,
     openPlugins,
+    showPluginPanels,
+    setShowPluginPanels,
     showAgentSessionHistoryAction,
     showChecksAction,
     createTabBusy,

@@ -5210,6 +5210,11 @@
       "unreadable": "The host could not open this panel.",
       "needsUpdate": "Update the Orca app to open plugin panels here.",
       "components": "This panel only opens in the desktop app."
+    },
+    "session": {
+      "manage": "Manage plugins",
+      "title": "Plugins",
+      "none": "No enabled plugin has a panel yet."
     }
   }
 }

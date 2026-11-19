@@ -21,6 +21,7 @@ import { useMobileAllowAutoCloseActions } from './tabs/mobile-worker-auto-close'
 import { MobileAgentSessionTabActionSheet } from './tabs/MobileAgentSessionTabActionSheet'
 import { MobileNewTabSheet } from './tabs/MobileNewTabSheet'
 import { MobileSessionTextSizeSheet } from './MobileSessionTextSizeSheet'
+import { SessionPluginPanels } from '../plugins/SessionPluginPanels'
 
 export function MobileSessionSheets({ controller }: { controller: MobileSessionController }) {
   const t = useMobileTranslation()
@@ -107,6 +108,12 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
         onClose={() => setShowTerminalLayout(false)}
       />
       <MobileSessionTextSizeSheet controller={controller} />
+      <SessionPluginPanels
+        client={controller.client}
+        visible={controller.showPluginPanels}
+        onClose={() => controller.setShowPluginPanels(false)}
+        onManage={controller.openPlugins}
+      />
       <QuickCommandsSheet
         visible={showQuickCommands && quickCommandsSupported === true}
         onClose={() => setShowQuickCommands(false)}

@@ -35,7 +35,7 @@ export function MobileSessionHeaderMoreMenu({ controller, anchorRef, actionsColl
     showAgentSessionHistoryAction,
     showChecksAction,
     openAgentSessionHistory,
-    openPlugins,
+    setShowPluginPanels,
     handlePanelTap,
     canSplitTerminals,
     terminalSplitActive,
@@ -105,7 +105,7 @@ export function MobileSessionHeaderMoreMenu({ controller, anchorRef, actionsColl
       icon: Puzzle,
       disabled: connState !== 'connected',
       closeBeforePress: true,
-      onPress: openPlugins
+      onPress: () => setShowPluginPanels(true)
     },
     {
       id: 'quickCommands',
