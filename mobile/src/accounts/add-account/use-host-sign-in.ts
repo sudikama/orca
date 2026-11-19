@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { z } from 'zod'
+import * as z from 'zod'
 import {
   HOST_ACCOUNT_SIGN_IN_SETTLED_PHASES,
   type HostAccountSignInProvider,

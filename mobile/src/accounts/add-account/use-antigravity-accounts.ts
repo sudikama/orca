@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { z } from 'zod'
+import * as z from 'zod'
 import { ProviderRateLimitsSchema, type ProviderRateLimits } from '../accounts-snapshot'
 import type { RpcClient } from '../../transport/rpc/rpc-client-contract'
 
