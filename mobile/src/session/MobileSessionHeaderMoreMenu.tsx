@@ -7,6 +7,7 @@ import {
   GitBranch,
   ListChecks,
   Plus,
+  Puzzle,
   SquareChevronRight
 } from 'lucide-react-native'
 import { MobileAgentSessionHistoryIcon } from '../agent-history/MobileAgentSessionHistoryIcon'
@@ -34,6 +35,7 @@ export function MobileSessionHeaderMoreMenu({ controller, anchorRef, actionsColl
     showAgentSessionHistoryAction,
     showChecksAction,
     openAgentSessionHistory,
+    openPlugins,
     handlePanelTap,
     canSplitTerminals,
     terminalSplitActive,
@@ -97,6 +99,14 @@ export function MobileSessionHeaderMoreMenu({ controller, anchorRef, actionsColl
           }
         ]
       : []),
+    {
+      id: 'plugins',
+      label: t('session.header.plugins', 'Plugins'),
+      icon: Puzzle,
+      disabled: connState !== 'connected',
+      closeBeforePress: true,
+      onPress: openPlugins
+    },
     {
       id: 'quickCommands',
       label: t('session.header.quickCommands', 'Quick commands'),

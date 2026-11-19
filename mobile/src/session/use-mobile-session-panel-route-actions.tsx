@@ -158,6 +158,10 @@ export function useMobileSessionPanelRouteActions(scope: MobileSessionPresentati
       )
     )
   }
+  // Fork: plugins run on the host; their screen opens from inside a session too.
+  const openPlugins = () => {
+    router.push(`/h/${encodeURIComponent(hostId)}/plugins`)
+  }
   const showAgentSessionHistoryAction =
     !isFolderWorkspaceRoute && !isFloatingWorkspaceRoute && agentSessionHistorySupported === true
   const showChecksAction = shouldShowSessionHeaderChecksAction({
@@ -194,6 +198,7 @@ export function useMobileSessionPanelRouteActions(scope: MobileSessionPresentati
     handleSessionContentRowLayout,
     handlePanelTap,
     openAgentSessionHistory,
+    openPlugins,
     showAgentSessionHistoryAction,
     showChecksAction,
     createTabBusy,
