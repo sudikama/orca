@@ -7,7 +7,7 @@ import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import { styles } from './mobile-plugins-styles'
 import { pluginKindLabel, pluginKinds } from './plugin-categories'
 import type { MarketplaceListing } from './plugin-rpc-schemas'
-import { PluginGallery } from './PluginGallery'
+import { PluginGallery, PluginIcon } from './PluginGallery'
 import { PluginSheetButton } from './PluginSheetButton'
 
 function sourceLink(listing: MarketplaceListing): string | null {
@@ -42,7 +42,12 @@ export function MarketplaceDetailSheet(props: {
     <BottomDrawer visible={listing !== null} onClose={props.onClose} contentScrollable>
       {listing ? (
         <View>
-          <Text style={styles.sheetTitle}>{listing.name ?? listing.pluginKey}</Text>
+          <View style={styles.sheetHeader}>
+            <PluginIcon client={props.client} images={listing.images} size={40} />
+            <Text style={[styles.sheetTitle, styles.sheetHeaderTitle]}>
+              {listing.name ?? listing.pluginKey}
+            </Text>
+          </View>
           {meta ? <Text style={styles.sheetMeta}>{meta}</Text> : null}
           <PluginGallery client={props.client} images={listing.images} />
           {listing.description ? <Text style={styles.sheetText}>{listing.description}</Text> : null}

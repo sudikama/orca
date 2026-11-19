@@ -16,6 +16,7 @@ import { useHostClient } from '../transport/connection/host-client-hooks'
 import { styles } from './mobile-plugins-styles'
 import { PluginApprovalSheet } from './PluginApprovalSheet'
 import { PluginDetailSheet } from './PluginDetailSheet'
+import { PluginIcon } from './PluginGallery'
 import { MarketplaceDetailSheet } from './MarketplaceDetailSheet'
 import { PluginCategoryChips } from './PluginCategoryChips'
 import { pluginKindCounts, pluginKinds } from './plugin-categories'
@@ -133,6 +134,7 @@ export function MobilePluginsScreen() {
                 {installed.map((plugin) => (
                   <ListRow
                     key={plugin.pluginKey}
+                    leading={<PluginIcon client={client} images={plugin.images} />}
                     title={plugin.name}
                     subtitle={`${plugin.version} · ${statusLabel(t, plugin)}`}
                     selected={isPluginEnabled(plugin)}
@@ -153,6 +155,9 @@ export function MobilePluginsScreen() {
                 {available.map((listing) => (
                   <ListRow
                     key={listing.pluginKey}
+                    leading={
+                      <PluginIcon client={client} images={listing.images} coverFallback={false} />
+                    }
                     title={listing.name ?? listing.pluginKey}
                     subtitle={listing.description}
                     accessory={

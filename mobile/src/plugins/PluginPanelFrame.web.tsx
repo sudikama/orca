@@ -12,8 +12,11 @@ import {
 // A DOM style, not a StyleSheet entry: this element is an iframe, not a react-native view.
 const IFRAME_STYLE = {
   border: 'none',
+  display: 'block',
   width: '100%',
   height: '100%',
+  flex: '1 1 auto',
+  minHeight: 0,
   backgroundColor: 'transparent'
 } as const
 

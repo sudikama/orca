@@ -160,7 +160,14 @@ export function PluginPanelSheet(props: {
   )
 
   return (
-    <BottomDrawer visible={panel !== null} onClose={props.onClose} fillAvailable>
+    <BottomDrawer
+      visible={panel !== null}
+      onClose={props.onClose}
+      fillAvailable
+      // Fork: no outer ScrollView, so the frame takes the sheet's full height and the panel
+      // scrolls inside its own document instead of being cut off at a fixed height.
+      contentScrollable={false}
+    >
       {panel ? (
         <View style={styles.panelBody}>
           <Text style={styles.sheetTitle}>{panel.title}</Text>
@@ -177,14 +184,16 @@ export function PluginPanelSheet(props: {
               {t('plugins.panel.components', 'This panel only opens in the desktop app.')}
             </Text>
           ) : (
-            <PluginPanelFrame
-              key={state.html}
-              html={state.html}
-              hello={state.hello}
-              colorScheme={colorScheme}
-              title={panel.title}
-              call={call}
-            />
+            <View style={styles.panelFrame}>
+              <PluginPanelFrame
+                key={state.html}
+                html={state.html}
+                hello={state.hello}
+                colorScheme={colorScheme}
+                title={panel.title}
+                call={call}
+              />
+            </View>
           )}
         </View>
       ) : null}

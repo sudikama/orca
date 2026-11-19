@@ -21,6 +21,8 @@ export const styles = themedStyleSheet(() => ({
     color: colors.textPrimary,
     paddingBottom: spacing.xs
   },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  sheetHeaderTitle: { flexShrink: 1, paddingBottom: 0 },
   sheetMeta: { fontSize: 13, color: colors.textMuted, paddingBottom: spacing.sm },
   sheetText: { fontSize: 14, color: colors.textSecondary, marginVertical: spacing.xs },
   bullet: { fontSize: 14, color: colors.textSecondary, paddingLeft: spacing.sm },
@@ -48,5 +50,6 @@ export const styles = themedStyleSheet(() => ({
     backgroundColor: colors.bgRaised
   },
   logLine: { fontSize: 12, color: colors.textSecondary, fontFamily: 'monospace' },
-  panelBody: { flex: 1, minHeight: 420 }
+  panelBody: { flex: 1, minHeight: 0 },
+  panelFrame: { flex: 1, minHeight: 0 }
 }))

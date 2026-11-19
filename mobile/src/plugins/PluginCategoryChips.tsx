@@ -34,7 +34,9 @@ export function PluginCategoryChips(props: {
       contentContainerStyle={styles.row}
       style={styles.scroller}
     >
-      {chip('all', t('plugins.kind.all', 'All'), props.selected === null, () => props.onSelect(null))}
+      {chip('all', t('plugins.kind.all', 'All'), props.selected === null, () =>
+        props.onSelect(null)
+      )}
       {props.kinds.map(([kind, count]) =>
         chip(kind, `${pluginKindLabel(kind, t)} ${count}`, props.selected === kind, () =>
           props.onSelect(props.selected === kind ? null : kind)

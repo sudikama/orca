@@ -11,7 +11,7 @@ import { isPluginEnabled, type PluginListEntry, type PluginLogLine } from './plu
 import { PluginSheetButton } from './PluginSheetButton'
 import type { HostPlugins } from './use-host-plugins'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
-import { PluginGallery } from './PluginGallery'
+import { PluginGallery, PluginIcon } from './PluginGallery'
 
 /** One installed plugin: on/off, its commands and panels, and its maintenance actions. */
 export function PluginDetailSheet(props: {
@@ -39,7 +39,10 @@ export function PluginDetailSheet(props: {
     <BottomDrawer visible={plugin !== null} onClose={props.onClose} contentScrollable>
       {plugin ? (
         <View>
-          <Text style={styles.sheetTitle}>{plugin.name}</Text>
+          <View style={styles.sheetHeader}>
+            <PluginIcon client={props.client} images={plugin.images} size={40} />
+            <Text style={[styles.sheetTitle, styles.sheetHeaderTitle]}>{plugin.name}</Text>
+          </View>
           <Text style={styles.sheetMeta}>
             {plugin.publisher ? `${plugin.version} · ${plugin.publisher}` : plugin.version}
           </Text>

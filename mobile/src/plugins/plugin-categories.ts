@@ -54,7 +54,10 @@ const KIND_ORDER = [
 ]
 
 /** A plugin's kinds: its catalog categories folded into known kinds, else its contributed types. */
-export function pluginKinds(categories: readonly string[], types: readonly string[] = []): string[] {
+export function pluginKinds(
+  categories: readonly string[],
+  types: readonly string[] = []
+): string[] {
   const kinds = new Set<string>()
   for (const category of categories) {
     if (!NON_KIND_CATEGORIES.has(category)) {

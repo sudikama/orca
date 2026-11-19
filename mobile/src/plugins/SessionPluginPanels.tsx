@@ -5,6 +5,7 @@ import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { RpcClient } from '../transport/rpc/rpc-client-contract'
 import { isPluginEnabled, PluginListSchema, type PluginListEntry } from './plugin-rpc-schemas'
 import { PluginPanelSheet, type OpenPluginPanel } from './PluginPanelSheet'
+import { PluginIcon } from './PluginGallery'
 
 /** The session menu's Plugins action: each enabled plugin's panels, opened in place. */
 export function SessionPluginPanels(props: {
@@ -57,6 +58,7 @@ export function SessionPluginPanels(props: {
       label: plugin.name,
       ...(panel.title === plugin.name ? {} : { hint: panel.title }),
       icon: Puzzle,
+      renderIcon: () => <PluginIcon client={client} images={plugin.images} size={20} />,
       // The panel sheet opens once this list has slid away.
       closeBeforePress: true,
       onPress: () =>
