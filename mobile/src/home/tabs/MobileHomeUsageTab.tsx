@@ -7,6 +7,10 @@ import Animated, {
   useSharedValue,
   withTiming
 } from 'react-native-reanimated'
+import {
+  useRemoveManagedAccount,
+  type RemovableAccount
+} from '../../accounts/add-account/use-remove-managed-account'
 import { usageBarFill } from '../../accounts/usage/UsageBar'
 import {
   getUsageBarState,
@@ -36,9 +40,17 @@ import { selectHomeUsageSections, type HomeUsageCard } from './home-usage-cards'
 import { MobileHomeHostPill, useHomeTabHost } from './MobileHomeHostPill'
 import { MobileHomeTabHeader, MobileHomeTabHeaderButton } from './MobileHomeTabHeader'
 import { mobileHomeUsageStyles as styles } from './mobile-home-usage-styles'
+import { UsageAddAccountButton } from './UsageAddAccountButton'
 import { getManagedAccountPrimaryLabel } from '../../../../src/shared/agent-accounts/managed-account-display-names'
 
 const PROVIDER_TITLES: Record<ProviderKey, string> = { claude: 'Claude Code', codex: 'Codex' }
+
+/** System default has no managed login to remove, so only cards with an id and email qualify. */
+function removableAccount(provider: ProviderKey, card: HomeUsageCard): RemovableAccount | null {
+  return card.accountId !== null && card.email !== null
+    ? { provider, accountId: card.accountId, email: card.email }
+    : null
+}
 
 /** Usage: agent account quota on one desktop, after the totals across all of them. */
 export function MobileHomeUsageTab(props: {
@@ -58,6 +70,7 @@ export function MobileHomeUsageTab(props: {
   const connected = host != null && props.hostStates[host.id] === 'connected'
   const [refreshingHostId, setRefreshingHostId] = useState<string | null>(null)
   const refreshing = host != null && refreshingHostId === host.id
+  const { requestRemove, dialogs } = useRemoveManagedAccount(client)
 
   // Why: the host pushes the refreshed usage over accounts.subscribe too, so the reply goes unread.
   const refresh = useCallback(async () => {
@@ -114,6 +127,7 @@ export function MobileHomeUsageTab(props: {
             snapshot={props.accountsByHost[host.id] ?? null}
             first={!props.stats}
             onOpenAccounts={props.onOpenAccounts}
+            onRemoveAccount={requestRemove}
           />
         ) : (
           <UsageEmpty
@@ -121,6 +135,12 @@ export function MobileHomeUsageTab(props: {
           />
         )}
       </ScrollView>
+      <UsageAddAccountButton
+        client={client}
+        connected={connected}
+        bottomInset={props.bottomInset}
+      />
+      {dialogs}
     </View>
   )
 }
@@ -131,6 +151,7 @@ function HostUsage(props: {
   snapshot: AccountsSnapshot | null
   first: boolean
   onOpenAccounts: (hostId: string) => void
+  onRemoveAccount: (account: RemovableAccount) => void
 }) {
   const t = useMobileTranslation()
   useMobileColorScheme()
@@ -186,17 +207,21 @@ function HostUsage(props: {
             }
           />
           <View style={homeListStyles.group}>
-            {section.cards.map((card, cardIndex) => (
-              <UsageCard
-                key={card.accountId ?? 'default'}
-                provider={section.provider}
-                card={card}
-                separated={cardIndex > 0}
-                now={now}
-                reducedMotion={reducedMotion}
-                onPress={() => props.onOpenAccounts(props.host.id)}
-              />
-            ))}
+            {section.cards.map((card, cardIndex) => {
+              const removable = removableAccount(section.provider, card)
+              return (
+                <UsageCard
+                  key={card.accountId ?? 'default'}
+                  provider={section.provider}
+                  card={card}
+                  separated={cardIndex > 0}
+                  now={now}
+                  reducedMotion={reducedMotion}
+                  onPress={() => props.onOpenAccounts(props.host.id)}
+                  onLongPress={removable ? () => props.onRemoveAccount(removable) : undefined}
+                />
+              )
+            })}
           </View>
         </View>
       ))}
@@ -211,6 +236,8 @@ function UsageCard(props: {
   now: number
   reducedMotion: boolean
   onPress: () => void
+  /** Only managed accounts offer it; the System default login has nothing to remove. */
+  onLongPress?: () => void
 }) {
   const t = useMobileTranslation()
   useMobileColorScheme()
@@ -241,6 +268,7 @@ function UsageCard(props: {
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={props.onPress}
+      onLongPress={props.onLongPress}
     >
       <Animated.View
         style={[
