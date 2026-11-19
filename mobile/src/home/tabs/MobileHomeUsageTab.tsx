@@ -1,24 +1,14 @@
 import { Gauge, RefreshCw } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
-import Animated, {
-  FadeIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming
-} from 'react-native-reanimated'
+import { useCallback, useState } from 'react'
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native'
+import Animated, { FadeIn } from 'react-native-reanimated'
+import { useAntigravityAccounts } from '../../accounts/add-account/use-antigravity-accounts'
 import {
   useRemoveManagedAccount,
   type RemovableAccount
 } from '../../accounts/add-account/use-remove-managed-account'
-import { usageBarFill } from '../../accounts/usage/UsageBar'
-import {
-  getUsageBarState,
-  getWindowResetLabel,
-  type ProviderKey
-} from '../../accounts/usage/usage-selectors'
+import { getOtherUsageProviders, type ProviderKey } from '../../accounts/usage/usage-selectors'
 import type { AccountsSnapshot } from '../../accounts/accounts-snapshot'
-import { ClaudeIcon, OpenAIIcon } from '../../components/icons/AgentIcons'
 import { useNow } from '../../hooks/use-now'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 import { useResponsiveLayout } from '../../layout/responsive-layout'
@@ -35,13 +25,18 @@ import { formatTimeAgo } from '../../worktree/agent-lineage/agent-row-display'
 import { homeListStyles } from '../home-list-styles'
 import { MobileHomeSectionHeading } from '../MobileHomeSectionHeading'
 import { MobileHomeStats } from '../MobileHomeStats'
-import { HOME_EASE_OUT } from './home-tabs'
-import { selectHomeUsageSections, type HomeUsageCard } from './home-usage-cards'
+import { selectAntigravityCards } from './antigravity-usage-cards'
+import {
+  selectHomeOtherUsageSections,
+  selectHomeUsageSections,
+  type HomeUsageCard
+} from './home-usage-cards'
 import { MobileHomeHostPill, useHomeTabHost } from './MobileHomeHostPill'
 import { MobileHomeTabHeader, MobileHomeTabHeaderButton } from './MobileHomeTabHeader'
 import { mobileHomeUsageStyles as styles } from './mobile-home-usage-styles'
 import { UsageAddAccountButton } from './UsageAddAccountButton'
-import { getManagedAccountPrimaryLabel } from '../../../../src/shared/agent-accounts/managed-account-display-names'
+import { UsageCard } from './MobileHomeUsageCard'
+import { getProviderDisplayName } from '../../../../src/shared/agent-usage/display/usage-provider-windows'
 
 const PROVIDER_TITLES: Record<ProviderKey, string> = { claude: 'Claude Code', codex: 'Codex' }
 
@@ -70,7 +65,17 @@ export function MobileHomeUsageTab(props: {
   const connected = host != null && props.hostStates[host.id] === 'connected'
   const [refreshingHostId, setRefreshingHostId] = useState<string | null>(null)
   const refreshing = host != null && refreshingHostId === host.id
-  const { requestRemove, dialogs } = useRemoveManagedAccount(client)
+  const snapshot = host ? (props.accountsByHost[host.id] ?? null) : null
+  const antigravityUpdatedAt = snapshot
+    ? (getOtherUsageProviders(snapshot).find((limits) => limits.provider === 'antigravity')
+        ?.updatedAt ?? null)
+    : null
+  const antigravity = useAntigravityAccounts(client, connected, antigravityUpdatedAt)
+  const { requestRemove, dialogs } = useRemoveManagedAccount(client, antigravity.reload)
+  const antigravityCards =
+    antigravity.data && antigravity.data.state.accounts.length > 0
+      ? selectAntigravityCards(antigravity.data)
+      : []
 
   // Why: the host pushes the refreshed usage over accounts.subscribe too, so the reply goes unread.
   const refresh = useCallback(async () => {
@@ -126,6 +131,7 @@ export function MobileHomeUsageTab(props: {
             connected={connected}
             snapshot={props.accountsByHost[host.id] ?? null}
             first={!props.stats}
+            antigravityCards={antigravityCards}
             onOpenAccounts={props.onOpenAccounts}
             onRemoveAccount={requestRemove}
           />
@@ -139,6 +145,7 @@ export function MobileHomeUsageTab(props: {
         client={client}
         connected={connected}
         bottomInset={props.bottomInset}
+        onClosed={antigravity.reload}
       />
       {dialogs}
     </View>
@@ -150,6 +157,7 @@ function HostUsage(props: {
   connected: boolean
   snapshot: AccountsSnapshot | null
   first: boolean
+  antigravityCards: readonly HomeUsageCard[]
   onOpenAccounts: (hostId: string) => void
   onRemoveAccount: (account: RemovableAccount) => void
 }) {
@@ -179,7 +187,12 @@ function HostUsage(props: {
     )
   }
   const sections = selectHomeUsageSections(props.snapshot)
-  if (sections.length === 0) {
+  const hasAntigravityAccounts = props.antigravityCards.length > 0
+  // With saved accounts, Antigravity gets a card per account instead of the host's single login.
+  const otherSections = selectHomeOtherUsageSections(props.snapshot).filter(
+    (section) => !(hasAntigravityAccounts && section.provider === 'antigravity')
+  )
+  if (sections.length === 0 && otherSections.length === 0 && !hasAntigravityAccounts) {
     return (
       <UsageEmpty
         message={t('home.usage.addAccounts', 'Add accounts from desktop Settings → Accounts.')}
@@ -225,150 +238,65 @@ function HostUsage(props: {
           </View>
         </View>
       ))}
-    </Animated.View>
-  )
-}
-
-function UsageCard(props: {
-  provider: ProviderKey
-  card: HomeUsageCard
-  separated: boolean
-  now: number
-  reducedMotion: boolean
-  onPress: () => void
-  /** Only managed accounts offer it; the System default login has nothing to remove. */
-  onLongPress?: () => void
-}) {
-  const t = useMobileTranslation()
-  useMobileColorScheme()
-  const [pressed, setPressed] = useState(false)
-  const { card } = props
-  const title =
-    card.email == null
-      ? t('accounts.screen.default', 'System default')
-      : getManagedAccountPrimaryLabel({ email: card.email, displayName: card.displayName })
-  // A named card keeps its email on the second line, as desktop rows do.
-  const subtitle =
-    card.email == null
-      ? t('accounts.screen.agentLogin', "Use the agent's own login")
-      : title === card.email
-        ? card.subtitle
-        : [card.email, card.subtitle].filter(Boolean).join(' · ')
-  const windows: { key: 'session' | 'weekly'; label: string }[] = [
-    { key: 'session', label: t('accounts.screen.sessionWindow', '5h') },
-    { key: 'weekly', label: t('accounts.screen.weeklyWindow', '7d') }
-  ]
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={[title, subtitle, card.active ? t('home.usage.active', 'Active') : null]
-        .filter(Boolean)
-        .join(', ')}
-      accessibilityHint={t('home.usage.openAccountsHint', 'Opens this desktop’s accounts')}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}
-      onPress={props.onPress}
-      onLongPress={props.onLongPress}
-    >
-      <Animated.View
-        style={[
-          styles.card,
-          props.separated && styles.cardSeparated,
-          pressed && styles.cardPressed,
-          {
-            transform: [{ scale: pressed && !props.reducedMotion ? 0.98 : 1 }],
-            transitionProperty: ['transform', 'backgroundColor'],
-            transitionDuration: 120
-          }
-        ]}
-      >
-        <View style={styles.head}>
-          <View style={styles.tile}>
-            {props.provider === 'claude' ? (
-              <ClaudeIcon size={16} />
-            ) : (
-              <OpenAIIcon size={16} color={colors.textPrimary} />
-            )}
-          </View>
-          <View style={styles.headText}>
-            <Text style={styles.cardTitle} numberOfLines={1}>
-              {title}
-            </Text>
-            {subtitle ? (
-              <Text style={styles.cardSubtitle} numberOfLines={1}>
-                {subtitle}
-              </Text>
-            ) : null}
-          </View>
-          {card.active ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{t('home.usage.active', 'Active')}</Text>
-            </View>
-          ) : null}
-        </View>
-        {card.metered
-          ? windows.map((window) => (
-              <UsageMeter
-                key={window.key}
-                label={window.label}
+      {hasAntigravityAccounts ? (
+        <View>
+          <MobileHomeSectionHeading
+            title={getProviderDisplayName('antigravity')}
+            first={props.first && sections.length === 0}
+          />
+          <View style={homeListStyles.group}>
+            {props.antigravityCards.map((card, cardIndex) => (
+              <UsageCard
+                key={card.accountId ?? 'default'}
+                provider="antigravity"
                 card={card}
-                windowKey={window.key}
-                now={props.now}
-                reducedMotion={props.reducedMotion}
+                separated={cardIndex > 0}
+                now={now}
+                reducedMotion={reducedMotion}
+                onPress={() => props.onOpenAccounts(props.host.id)}
+                onLongPress={
+                  card.accountId !== null && card.email !== null && !card.active
+                    ? () =>
+                        props.onRemoveAccount({
+                          provider: 'antigravity',
+                          accountId: card.accountId ?? '',
+                          email: card.email ?? ''
+                        })
+                    : undefined
+                }
               />
-            ))
-          : null}
-      </Animated.View>
-    </Pressable>
-  )
-}
-
-function UsageMeter(props: {
-  label: string
-  card: HomeUsageCard
-  windowKey: 'session' | 'weekly'
-  now: number
-  reducedMotion: boolean
-}) {
-  useMobileColorScheme()
-  const usageWindow = props.card.limits?.[props.windowKey] ?? null
-  const bar = getUsageBarState(props.card.limits, usageWindow, props.card.fetching)
-  const { used, color } = usageBarFill(bar.usedPercent, bar.unavailable)
-  const reset = getWindowResetLabel(usageWindow, props.now)
-  const width = useSharedValue(props.reducedMotion ? (used ?? 0) : 0)
-
-  useEffect(() => {
-    width.value = props.reducedMotion
-      ? (used ?? 0)
-      : withTiming(used ?? 0, { duration: 450, easing: HOME_EASE_OUT })
-  }, [props.reducedMotion, used, width])
-
-  const fillStyle = useAnimatedStyle(() => ({ width: `${width.value}%` }))
-  const value = bar.unavailable || used == null ? '—' : `${used}%`
-
-  return (
-    <>
-      <View
-        style={styles.meter}
-        accessible
-        accessibilityLabel={[props.label, value, reset].filter(Boolean).join(', ')}
-      >
-        <Text style={styles.meterLabel}>{props.label}</Text>
-        <View style={styles.track}>
-          <Animated.View style={[styles.fill, { backgroundColor: color }, fillStyle]} />
+            ))}
+          </View>
         </View>
-        {bar.loading ? (
-          <ActivityIndicator size="small" color={colors.textSecondary} style={styles.meterValue} />
-        ) : (
-          <Text style={styles.meterValue}>{value}</Text>
-        )}
-      </View>
-      {reset ? (
-        <Text style={styles.reset} numberOfLines={1}>
-          {reset}
-        </Text>
       ) : null}
-    </>
+      {otherSections.map((section, index) => (
+        <View key={section.provider}>
+          <MobileHomeSectionHeading
+            title={getProviderDisplayName(section.provider)}
+            first={props.first && sections.length === 0 && !hasAntigravityAccounts && index === 0}
+            aside={
+              section.updatedAt == null
+                ? undefined
+                : now - section.updatedAt < 60_000
+                  ? t('home.usage.updatedJustNow', 'Updated just now')
+                  : t('home.usage.updatedAgo', 'Updated {{time}} ago', {
+                      time: formatTimeAgo(section.updatedAt, now)
+                    })
+            }
+          />
+          <View style={homeListStyles.group}>
+            <UsageCard
+              provider={section.provider}
+              card={section.card}
+              separated={false}
+              now={now}
+              reducedMotion={reducedMotion}
+              onPress={() => props.onOpenAccounts(props.host.id)}
+            />
+          </View>
+        </View>
+      ))}
+    </Animated.View>
   )
 }
 

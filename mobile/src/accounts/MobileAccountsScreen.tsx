@@ -27,9 +27,10 @@ import {
   getOtherUsageProviders,
   hasActiveProviderUsage
 } from './usage/usage-selectors'
-import { MobileAgentIcon } from '../components/icons/MobileAgentIcon'
 import { getProviderDisplayName } from '../../../src/shared/agent-usage/display/usage-provider-windows'
 import { ProviderUsageWindows } from './ProviderUsageWindows'
+import { AntigravityAccountsSection } from './AntigravityAccountsSection'
+import { OtherProviderUsage } from './OtherProviderUsage'
 import {
   getActiveCodexAccountIdForRateLimitTarget,
   getCodexResetCreditSummary
@@ -287,37 +288,9 @@ export function MobileAccountsScreen() {
     )
   }
 
-  // Every other provider desktop shows usage for; usage only, since accounts are managed on desktop.
-  const renderOtherProviders = () => {
-    const providers = snapshot ? getOtherUsageProviders(snapshot) : []
-    if (providers.length === 0) {
-      return null
-    }
-    return (
-      <View>
-        <SectionHeader title={t('accounts.screen.otherAgents', 'Other agents')} />
-        <ListGroup style={styles.group}>
-          {providers.map((limits) => (
-            <ListRow
-              key={limits.provider}
-              title={getProviderDisplayName(limits.provider)}
-              leading={<MobileAgentIcon agentId={limits.provider} size={16} />}
-              detail={
-                <>
-                  <ProviderUsageWindows limits={limits} now={now} />
-                  {limits.error ? (
-                    <Text style={styles.errorText} numberOfLines={1}>
-                      {limits.error}
-                    </Text>
-                  ) : null}
-                </>
-              }
-            />
-          ))}
-        </ListGroup>
-      </View>
-    )
-  }
+  const usageOnly = snapshot ? getOtherUsageProviders(snapshot) : []
+  const otherProviders = usageOnly.filter((limits) => limits.provider !== 'antigravity')
+  const antigravityLimits = usageOnly.find((limits) => limits.provider === 'antigravity') ?? null
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -372,7 +345,20 @@ export function MobileAccountsScreen() {
             ) : null}
             {renderProviderSection('claude')}
             {renderProviderSection('codex')}
-            {renderOtherProviders()}
+            <AntigravityAccountsSection
+              client={client}
+              connected={connState === 'connected'}
+              now={now}
+              usageUpdatedAt={antigravityLimits?.updatedAt ?? null}
+              fallback={
+                antigravityLimits ? (
+                  <OtherProviderUsage limits={antigravityLimits} now={now} />
+                ) : null
+              }
+            />
+            {otherProviders.map((limits) => (
+              <OtherProviderUsage key={limits.provider} limits={limits} now={now} />
+            ))}
             <View style={styles.footerHint}>
               <User size={14} color={colors.textMuted} />
               <Text style={styles.footerHintText}>

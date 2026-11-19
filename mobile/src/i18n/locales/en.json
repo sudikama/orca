@@ -378,7 +378,6 @@
       "manageAccountsHint": "Add or re-authenticate accounts from desktop Settings → Accounts.",
       "useReset": "Use reset",
       "pairingInvalidMessage": "Re-pair this phone with your desktop to see its accounts.",
-      "otherAgents": "Other agents",
       "fableWindow": "Fable",
       "mcpWindow": "MCP"
     },
@@ -406,6 +405,9 @@
       "message": "{{email}} will be signed out of this host. You can add it again later.",
       "confirm": "Remove",
       "failed": "Could not remove account"
+    },
+    "antigravity": {
+      "unknown": "Unknown account"
     }
   },
   "agentHistory": {
