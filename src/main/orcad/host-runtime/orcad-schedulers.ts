@@ -3,6 +3,7 @@ import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { startWorkspaceCleanupRunner } from '../../workspaces/cleanup/workspace-cleanup-runner-startup'
 import { getWorkspaceCleanupRunner } from '../../workspaces/cleanup/workspace-cleanup-runner-registry'
 import { orcadAutomationsKeepHostBusy, startOrcadAutomations } from './orcad-automations'
+import { startOrcadAutoSleep } from './orcad-auto-sleep'
 
 /** The host's own background jobs: automation schedules and workspace cleanup rules. */
 export function startOrcadSchedulers(
@@ -13,6 +14,7 @@ export function startOrcadSchedulers(
   startOrcadAutomations(runtime, store, registerCleanup)
   const cleanupRunner = startWorkspaceCleanupRunner(runtime, store)
   registerCleanup(() => cleanupRunner?.stop())
+  startOrcadAutoSleep(runtime, registerCleanup)
 }
 
 /** A cleanup run mid-removal must finish before idle exit, like a pending automation run. */
