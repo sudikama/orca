@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Why: fork-only Antigravity host sign-in is routed through runHostSignIn beside Claude and Codex, and upstream already sits at the 300-line limit. */
 import type { ClaudeAccountService } from '../../../claude-accounts/service'
 import { hasAppEnvironment } from '../../../../shared/app-lifecycle/app-environment'
 import { getManagedDataAccountService } from '../../../managed-data-accounts/service'
@@ -35,6 +36,7 @@ import {
 } from '../../../../shared/agent-launch/startup/host-account-launch-env'
 import type { HostClaudeProfileRefresh } from './host-claude-profile-refresh'
 import { HostAccountLaunchEnvState } from './host-account-launch-env-state'
+import { signInAntigravityForDevice } from '../../../antigravity/antigravity-device-sign-in'
 import { subscribeRuntimeAccountChanges } from './runtime-account-change-subscription'
 import type { ManagedAccountNameProvider } from '../../../../shared/agent-accounts/managed-account-display-names'
 import type { RuntimeNotifier } from '../../client/events/runtime-notifier-contract'
@@ -287,6 +289,10 @@ export class RuntimeAccountController {
     provider: HostAccountSignInProvider,
     channel: HostAccountSignInChannel
   ): Promise<Pick<HostAccountSignInStatus, 'claude' | 'codex'>> {
+    if (provider === 'antigravity') {
+      await signInAntigravityForDevice(channel)
+      return {}
+    }
     const { claudeAccounts, codexAccounts } = this.requireServices()
     return provider === 'claude'
       ? { claude: await claudeAccounts.addAccountWithPastedCode(channel) }

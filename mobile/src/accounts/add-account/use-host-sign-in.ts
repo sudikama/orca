@@ -19,7 +19,7 @@ const WAIT_TIMEOUT_MS = 35_000
 // Only the fields the sheet reads; account snapshots on the status stay on the host's own stream.
 const HostSignInStatusSchema = z.object({
   flowId: z.string(),
-  provider: z.enum(['claude', 'codex']),
+  provider: z.enum(['claude', 'codex', 'antigravity']),
   revision: z.number(),
   phase: z.enum(['starting', 'waiting', 'verifying', 'signedIn', 'failed', 'cancelled']),
   prompt: z

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Why: fork-only importCredential must share this class's serialized vault mutations and private identity matching, and upstream already sits at the 300-line limit. */
 import { randomUUID } from 'node:crypto'
 import type { AntigravityAccountState } from '../../shared/agent-accounts/antigravity/antigravity-account-types'
 import type {
@@ -101,6 +102,35 @@ export class AntigravityAccountService {
       this.updateSnapshot(latest, identified)
       this.store.write(latest)
       return this.state({ vault: latest, current: identified })
+    })
+  }
+
+  /** Saves a login that agy wrote elsewhere (a sign-in run for another device) without switching to it. */
+  importCredential(contents: string): Promise<AntigravityAccountState> {
+    return this.serialize(async () => {
+      const credential = (this.backend.parse ?? parseAntigravityNativeCredential)(contents)
+      const identity = credential.identity ?? (await this.lookupIdentity(credential.accessToken))
+      const identified = { ...credential, identity }
+      const latest = this.store.read()
+      const timestamp = this.now()
+      const existing = latest.accounts.find((entry) => this.matches(entry, identified))
+      if (existing) {
+        existing.credentials = credential.contents
+        existing.email = identity.email
+        existing.updatedAt = timestamp
+      } else {
+        latest.accounts.push({
+          id: randomUUID(),
+          email: identity.email,
+          subject: identity.subject,
+          authMethod: credential.authMethod,
+          credentials: credential.contents,
+          createdAt: timestamp,
+          updatedAt: timestamp
+        })
+      }
+      this.store.write(latest)
+      return this.state({ vault: latest, current: await this.backend.read() })
     })
   }
 
