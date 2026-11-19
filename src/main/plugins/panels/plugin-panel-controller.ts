@@ -20,7 +20,7 @@ import type { PluginHostCaller } from '../runtime/plugin-service-host-call'
 import { getPluginHostMethodSpec } from '../../../shared/plugins/workers/plugin-host-api'
 import type { PluginContentVerifier } from '../artifacts/plugin-content-integrity'
 import { PLUGIN_PANEL_ENTRY_MAX_BYTES } from '../../../shared/plugins/frames/plugin-frame-entry-limits'
-import { readContainedPluginArtifactText } from '../artifacts/plugin-contained-artifact'
+import { readInlinedPluginPanelEntry } from './plugin-panel-inline-assets'
 import {
   PluginPanelSessions,
   type PluginPanelSessionBinding,
@@ -297,7 +297,7 @@ export class PluginPanelController {
       const html = buildPluginPanelShellHtml(
         entryPath === null
           ? ''
-          : await readContainedPluginArtifactText(
+          : await readInlinedPluginPanelEntry(
               plugin.rootDir,
               entryPath,
               PLUGIN_PANEL_ENTRY_MAX_BYTES
